@@ -1,5 +1,7 @@
 #include "surface_node.h"
 #include "coord/transform.h"
+#include "glapi/buffer_object.h"
+#include "glapi/program.h"
 #include <fstream>
 #include <functional>
 #include <glad/glad.h>
@@ -17,33 +19,12 @@ int idx = 0;
 int curr = -1;
 auto file = std::fopen("out.txt", "w");
 
-#define TRACE_GL()                                                                     \
-  switch (glGetError()) {                                                              \
-                                                                                       \
-  case GL_INVALID_ENUM:                                                                \
-    std::cout << __LINE__ << " error:  GL_INVALID_ENUM" << std::endl;                  \
-    break;                                                                             \
-  case GL_INVALID_VALUE:                                                               \
-    std::cout << __LINE__ << " error:  GL_INVALID_VALUE" << std::endl;                 \
-    break;                                                                             \
-  case GL_INVALID_OPERATION:                                                           \
-    std::cout << __LINE__ << " error:  GL_INVALID_OPERATION" << std::endl;             \
-    break;                                                                             \
-  case GL_INVALID_FRAMEBUFFER_OPERATION:                                               \
-    std::cout << __LINE__ << " error:  GL_INVALID_FRAMEBUFFER_OPERATION" << std::endl; \
-    break;                                                                             \
-  case GL_OUT_OF_MEMORY:                                                               \
-    std::cout << __LINE__ << " error:  GL_OUT_OF_MEMORY" << std::endl;                 \
-    break;                                                                             \
-  }
-
 namespace esim {
 
 class surface_node::impl {
 public:
-  struct vertex {
+  struct vertex_node {
     float x, y, z;
-
   };
   
   struct compute_vertex {
@@ -65,7 +46,7 @@ public:
 
   void prepare_indices() noexcept {
     const uint32_t vertex_count = (details) * (details);
-    indices_buf_.resize(vertex_count * 6);
+    std::vector<uint32_t> indices_buf_(vertex_count * 6);
 
     size_t idx = 0;
     for (size_t i = 0; i < details; ++i) {
@@ -79,14 +60,8 @@ public:
       }
     }
 
-    glGenBuffers(1, &indices_id_);
-    TRACE_GL();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id_);
-    TRACE_GL();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 sizeof(uint32_t) * vertex_count * 6,
-                 indices_buf_.data(), GL_STATIC_DRAW);
-    TRACE_GL();
+    ibo_.generate_buffer();
+    ibo_.bind_buffer_data(indices_buf_);
   }
 
   void prepare_vertex() noexcept {
@@ -97,18 +72,15 @@ public:
            ytile = tile_.ytile;
 
     std::memset(&offset_, 0, sizeof(offset_));
-    pos_buf_.resize(vertex_count);
     std::vector<compute_vertex> computing_vertex(vertex_count);
-    printf("(%d, %lf, %lf)\n", zoom, xtile, ytile);
+    std::vector<vertex_node> v_buffer(vertex_count);
     for (size_t i=0; i<=details; ++i) {
       for (size_t j=0; j<=details; ++j) {
         auto &buffer = computing_vertex[to_index(i, j)];
         buffer.x = coord::tiley_to_lati(zoom, ytile + tile_step * i);
         buffer.y = coord::tilex_to_long(zoom, xtile + tile_step * j);
-        printf("%d : {%f, %f} lla: {%lf, %lf}",to_index(i,j), ytile + tile_step * i, xtile + tile_step * j,buffer.x, buffer.y);
         buffer.z = 0.0;
         coord::geodetic_to_ecef<coord::TEST>(buffer.x, buffer.y, buffer.z);
-        printf(" pos: {%lf, %lf}\n\n",buffer.x, buffer.y);
         offset_.x += buffer.x;
         offset_.y += buffer.y;
         offset_.z += buffer.z;
@@ -120,7 +92,7 @@ public:
     offset_.z /= vertex_count;
 
     auto v_it = computing_vertex.begin();
-    for (auto &v : pos_buf_) {
+    for (auto &v : v_buffer) {
       auto &compute_v = *v_it++;
       v.x = (float) compute_v.x - offset_.x;
       v.y = (float) compute_v.y - offset_.y;
@@ -130,20 +102,11 @@ public:
       // v.z = compute_v.z;
     }
 
-    atb_posn_ = pprog_->obtain_attribute("attb_pos");
-    glGenBuffers(1, &h_pos_buf_);
-    TRACE_GL();
-    glBindBuffer(GL_ARRAY_BUFFER, h_pos_buf_);
-    TRACE_GL();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * pos_buf_.size(), pos_buf_.data(), GL_STATIC_DRAW);
-    TRACE_GL();
-    glEnableVertexAttribArray(atb_posn_);
-    glVertexAttribPointer(atb_posn_, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-    TRACE_GL();
+    vbo_.generate_buffer();
+    vbo_.bind_buffer_data(v_buffer);
   }
 
   void draw(int width, int height) noexcept {
-    const uint32_t vertex_count = details * details;
     GLfloat ratio = (GLfloat)width / (GLfloat)height;
 
     // auto m = glm::mat4x4(1.f);
@@ -156,41 +119,31 @@ public:
     auto offset = glm::vec3(0.f, 0.f, 0.f);
 
     pprog_->use_program();
+    vbo_.bind();
+    ibo_.bind();
     glUniformMatrix4fv(unf_modl_, 1, GL_FALSE, glm::value_ptr(m));
-    TRACE_GL();
     glUniformMatrix4fv(unf_view_, 1, GL_FALSE, glm::value_ptr(v));
-    TRACE_GL();
     glUniformMatrix4fv(unf_proj_, 1, GL_FALSE, glm::value_ptr(p));
-    TRACE_GL();
     glUniform3fv(unf_offset_, 1, glm::value_ptr(offset));
-    TRACE_GL();
 
     glUniform3fv(unf_offset_, 1, glm::value_ptr(glm::vec3(0.f, 0.6f, 0.f)));
     glPointSize(10);
-    TRACE_GL();
     glUniform3fv(unf_offset_, 1, glm::value_ptr(glm::vec3(0.2f, 0.2f, 0.2f)));
-    glDrawElements(GL_TRIANGLES, indices_buf_.size(), GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, ibo_.size(), GL_UNSIGNED_INT, nullptr);
     glUniform3fv(unf_offset_, 1, glm::value_ptr(glm::vec3(0.5f, 0.5f, 0.5f)));
-    glDrawArrays(GL_POINTS, 0, vertex_count);
+    glDrawArrays(GL_POINTS, 0, vbo_.size());
     if (idx < 0) {
-      idx += vertex_count * 6;
+      idx += ibo_.size();
     }
-    int x = (idx * 3) % (vertex_count * 6);
+    int x = (idx * 3) % (ibo_.size());
     if (curr != x) {
       curr = x;
-      std::cout << "indices[" << x << "] = " << (int)indices_buf_[curr] << " => ";
-      std::cout << pos_buf_[indices_buf_[curr]].x << ", " << pos_buf_[indices_buf_[curr]].y << ", " << pos_buf_[indices_buf_[curr]].z  << std::endl;
-      std::cout << "indices[" << x+1 << "] = " << (int)indices_buf_[curr+1] <<  " => ";
-      std::cout << pos_buf_[indices_buf_[curr+1]].x << ", " << pos_buf_[indices_buf_[curr+1]].y<< ", " << pos_buf_[indices_buf_[curr+1]].z  << std::endl;
-      std::cout << "indices[" << x+2 << "] = " << (int)indices_buf_[curr+2] <<  " => ";
-      std::cout << pos_buf_[indices_buf_[curr+2]].x << ", " << pos_buf_[indices_buf_[curr+2]].y << ", " << pos_buf_[indices_buf_[curr+2]].z << std::endl << std::endl;
     }
     glUniform3fv(unf_offset_, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 1.0f)));
-    glDrawElements(GL_LINE_STRIP, indices_buf_.size(), GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_LINE_STRIP, ibo_.size(), GL_UNSIGNED_INT, nullptr);
     glUniform3fv(unf_offset_, 1, glm::value_ptr(glm::vec3(0.0f, 1.0f, 1.0f)));
     glDrawElements(GL_POINTS, 3, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * curr));
     glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(sizeof(GLuint) * curr));
-    TRACE_GL();
   }
 
   impl(uint32_t zoom, uint32_t xtile, uint32_t ytile,
@@ -221,11 +174,11 @@ public:
     unf_view_ = pprog_->obtain_uniform("unfm_view");
     unf_proj_ = pprog_->obtain_uniform("unfm_proj");
     unf_offset_ = pprog_->obtain_uniform("unfm_offset");
+    atb_posn_ = pprog_->obtain_attribute("attb_pos");
     prepare_vertex();
-    
-    if (indices_buf_.empty()) {
-      prepare_indices();
-    }
+    prepare_indices();
+    glEnableVertexAttribArray(atb_posn_);
+    glVertexAttribPointer(atb_posn_, 3, GL_FLOAT, GL_FALSE, vbo_.type_size, (void*)0);
   }
 
   ~impl() = default;
@@ -250,7 +203,7 @@ private:
   }
 
 private:
-  static const uint32_t details = 20;
+  static const uint32_t details = 33;
   const coord::tile_number tile_;
   std::vector<uint32_t> indices_buf_;
   GLuint indices_id_;
@@ -259,9 +212,9 @@ private:
 
   GLint unf_modl_, unf_view_, unf_proj_, unf_offset_;
   GLint atb_posn_;
-  GLuint h_pos_buf_;
+  gl_vertex_buffer<vertex_node> vbo_;
+  gl_index_buffer<uint32_t>     ibo_;
   compute_vertex offset_;
-  std::vector<vertex> pos_buf_;
 };
 
 bool surface_node::is_ready() const noexcept {

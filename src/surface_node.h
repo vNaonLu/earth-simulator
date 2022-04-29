@@ -1,7 +1,6 @@
 #ifndef __ESIM_SURFACE_NODE_H_
 #define __ESIM_SURFACE_NODE_H_
 
-#include "glapi/program.h"
 #include "utils.h"
 
 namespace esim {

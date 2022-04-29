@@ -1,0 +1,5 @@
+BDIR=.build
+
+cmake -S . -B $BDIR --log-level=VERBOSE
+
+cmake --build $BDIR

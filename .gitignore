@@ -1,0 +1,8 @@
+# build folder
+*build*/
+out/
+
+# local config
+.vscode/
+.vs/
+tags

@@ -7,9 +7,11 @@
 
 namespace esim {
 
+namespace gl {
+
 namespace details {
 
-class gl_buffer_base {
+class buffer_base {
 public:
   /**
    * @brief Generate a GL Buffer Object
@@ -18,6 +20,9 @@ public:
    */
   inline void generate_buffer(size_t count = 1) noexcept {
     assert(count > 0);
+    if (ids_.size() > 0) {
+      glDeleteBuffers(ids_.size(), ids_.data());
+    }
     ids_.resize(count);
     glGenBuffers(count, ids_.data());
   }
@@ -28,12 +33,13 @@ protected:
     glBindBuffer(type, ids_[idx]);
   }
 
-  gl_buffer_base() noexcept : ids_{0} {
+  buffer_base() noexcept : ids_{0} {
   }
 
-  ~gl_buffer_base() noexcept {
+  ~buffer_base() noexcept {
     if (!ids_.empty()) {
       glDeleteBuffers(ids_.size(), ids_.data());
+      ids_.clear();
     }
   }
 
@@ -50,7 +56,7 @@ private:
  * @tparam base_type specifies the data type.
  */
 template <typename base_type = uint32_t>
-class gl_index_buffer : public details::gl_buffer_base {
+class index_buffer : public details::buffer_base {
 public:
   typedef base_type type;
   inline static constexpr size_t type_size = sizeof(type);
@@ -72,8 +78,6 @@ public:
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &orig_bound_id);
     bind(idx);
     buffer_ = std::move(data);
-    std::cout << "size: " << buffer_.size() << std::endl;
-    std::cout << "bytes: " << (type_size * buffer_.size()) << std::endl;
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  type_size * buffer_.size(),
                  buffer_.data(), usage);
@@ -122,7 +126,7 @@ private:
  * @tparam base_type specifies the data type.
  */
 template <typename base_type = float>
-class gl_vertex_buffer : public details::gl_buffer_base {
+class vertex_buffer : public details::buffer_base {
 public:
   typedef base_type type;
   inline static constexpr size_t type_size = sizeof(type);
@@ -142,8 +146,6 @@ public:
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &orig_bound_id);
     bind(idx);
     buffer_ = std::move(data);
-    std::cout << "size: " << buffer_.size() << std::endl;
-    std::cout << "bytes: " << (type_size * buffer_.size()) << std::endl;
     glBufferData(GL_ARRAY_BUFFER,
                  type_size * buffer_.size(),
                  buffer_.data(), usage);
@@ -185,6 +187,8 @@ public:
 private:
   std::vector<base_type> buffer_;
 };
+
+} // namespace gl
 
 } // namespace esim
 

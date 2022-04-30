@@ -24,6 +24,7 @@ public:
     const static auto origin = vec3{0.f, 0.f, 0.f};
     auto res = perspective(radians(45.f), (float)viewport_.x / (float)viewport_.y, 0.1f, 100.0f);
     res *= lookAt((vec3)ecef_, origin, up_);
+    // res *= lookAt(origin,(vec3)ecef_, up_);
 
     return res;
   }

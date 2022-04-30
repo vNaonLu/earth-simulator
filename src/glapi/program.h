@@ -2,7 +2,6 @@
 #define __ESIM_GLAPI_PROGRAM_H_
 
 #include "buffer_object.h"
-#include "shader.h"
 #include "utils.h"
 #include <cassert>
 #include <functional>

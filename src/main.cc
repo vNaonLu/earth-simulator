@@ -5,8 +5,8 @@
 
 #include "camera.h"
 #include "coord/transform.h"
-#include "surface_node.h"
 #include <controller/mouse.h>
+#include <scene/surface_layer.h>
 
 static void error_callback(int, const char *);
 static void key_callback(GLFWwindow *, int, int, int, int);
@@ -15,8 +15,6 @@ int width = 1080,
     height = 1080;
 esim::camera camera{width, height, glm::vec3{0.f, 0.f, 3.f}, glm::vec3{0.f, 0.f, 1.f}};
 
-extern int idx;
-  
 int main(...) {
   GLFWwindow* window;
   glfwSetErrorCallback(error_callback);
@@ -42,21 +40,19 @@ int main(...) {
   gladLoadGL();
   glfwSwapInterval(1);
 
-  esim::surface_node p_surf1(0, 0, 0, [](const char *msg) {
-    std::cout << "[x] error: " << msg << std::endl;
-  });
+  esim::scene::surface_layer base_layer(15);
 
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    // glDepthFunc(GL_LEQUAL);
-    glDepthFunc(GL_ALWAYS);
+    glDepthFunc(GL_LEQUAL);
+    // glDepthFunc(GL_ALWAYS);
     glFrontFace(GL_CCW);
     glfwGetFramebufferSize(window, &width, &height);
     camera.set_viewport(width, height);
     glViewport(0, 0, width, height);
 
-    p_surf1.draw(camera);
+    base_layer.draw(camera);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -84,9 +80,5 @@ static void scroll_callback([[maybe_unused]] GLFWwindow *window,
 static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
-  } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-    ++idx;
-  } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-    --idx;
-  } 
+  }
 }

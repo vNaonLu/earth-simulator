@@ -27,6 +27,12 @@ public:
 
     return res;
   }
+
+  inline const glm::ivec2 &viewport() const noexcept {
+
+    return viewport_;
+  }
+
   /**
    * @brief Obtain the camera position in ECEF coordinate
    * 

@@ -70,7 +70,7 @@ inline double tiley_to_lati(uint32_t zoom, double y) {
 	return 180.0 / pi<double>() * atan(0.5 * (exp(n) - exp(-n)));
 }
 
-template <geodetic_system system = WGS84>
+template <geodetic_system system = TEST>
 inline void geodetic_to_ecef(double &x, double &y, double &z) {
   using namespace glm;
   constexpr static double a = geosystem_details<system>::semi_maj_axis,
@@ -91,7 +91,7 @@ inline void geodetic_to_ecef(double &x, double &y, double &z) {
   z = (n * (1 - e2) + alt) * sin(lat);
 }
 
-template <geodetic_system system = WGS84>
+template <geodetic_system system = TEST>
 inline void ecef_to_geodetic(double &lat, double &lon, double &alt) {
   using namespace glm;
   constexpr static double a = geosystem_details<system>::semi_maj_axis,

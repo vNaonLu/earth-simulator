@@ -2,6 +2,7 @@
 #define __ESIM_SURFACE_NODE_H_
 
 #include "utils.h"
+#include "camera.h"
 
 namespace esim {
 
@@ -9,7 +10,7 @@ class surface_node {
 public:
   bool is_ready() const noexcept;
 
-  void draw(int width, int height) noexcept;
+  void draw(const camera &cmr) noexcept;
 
   ~surface_node() = default;
 

@@ -100,6 +100,17 @@ public:
 
     return buffer_.size();
   }
+  
+  /**
+   * @brief Get buffer element
+   * 
+   * @param idx specifies the target index.
+   * @return the reference to buffer element.
+   */
+  inline const base_type &at(size_t idx) const noexcept {
+
+    return buffer_.at(idx);
+  }
 
 private:
   std::vector<base_type> buffer_;
@@ -158,6 +169,17 @@ public:
   inline size_t size() const noexcept {
 
     return buffer_.size();
+  }
+
+  /**
+   * @brief Get buffer element
+   * 
+   * @param idx specifies the target index.
+   * @return the reference to buffer element.
+   */
+  inline const base_type &at(size_t idx) const noexcept {
+
+    return buffer_.at(idx);
   }
 
 private:

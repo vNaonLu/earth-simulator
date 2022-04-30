@@ -23,7 +23,8 @@ add_executable(
 
 target_include_directories(
   ${PROJECT_NAME} 
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vendor
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+          ${CMAKE_CURRENT_SOURCE_DIR}/vendor
           ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw/include
           ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm)
 

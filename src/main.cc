@@ -3,8 +3,9 @@
 #include <glad/glad.h>
 #include <iostream>
 
-#include "surface_node.h"
+#include "camera.h"
 #include "coord/transform.h"
+#include "surface_node.h"
 
 static void error_callback(int error, const char *msg);
 static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -12,6 +13,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 extern int idx;
   
 int main(...) {
+  int width = 1080, height = 1080;
   GLFWwindow* window;
   glfwSetErrorCallback(error_callback);
 
@@ -23,7 +25,7 @@ int main(...) {
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  window = glfwCreateWindow(1080, 1080, "Simple example", NULL, NULL);
+  window = glfwCreateWindow(width, height, "Simple example", NULL, NULL);
   if (!window) {
     std::cout << "[x] failed to create window." << std::endl;
     glfwTerminate();
@@ -34,30 +36,24 @@ int main(...) {
   glfwMakeContextCurrent(window);
   gladLoadGL();
   glfwSwapInterval(1);
-  // glfwDefaultWindowHints();
-  // glfwWindowHint(GLFW_DEPTH_BITS, 0);
-  // glfwWindowHint(GLFW_STENCIL_BITS, 0);
-  // glfwWindowHint(GLFW_ALPHA_BITS, 0);
 
   esim::surface_node p_surf1(0, 0, 0, [](const char *msg) {
     std::cout << "[x] error: " << msg << std::endl;
   });
 
+  esim::camera camera{width, height, glm::vec3(0.f, 0.f, 3.f)};
+
   while (!glfwWindowShouldClose(window)) {
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     // glDepthFunc(GL_LEQUAL);
     glDepthFunc(GL_ALWAYS);
     glFrontFace(GL_CCW);
+    glfwGetFramebufferSize(window, &width, &height);
+    camera.set_viewport(width, height);
+    glViewport(0, 0, width, height);
 
-
-      p_surf1.draw(width, height);
-      // p_surf2.draw(width, height);
-      // p_surf3.draw(width, height);
-      // p_surf4.draw(width, height);
+    p_surf1.draw(camera);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

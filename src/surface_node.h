@@ -8,8 +8,6 @@ namespace esim {
 
 class surface_node {
 public:
-  bool is_ready() const noexcept;
-
   void draw(const camera &cmr) noexcept;
 
   ~surface_node() = default;

@@ -40,11 +40,6 @@ public:
     return row * (details) + col;
   }
 
-  bool is_ready() const noexcept {
-
-    return nullptr != pprog_ && pprog_->is_ready();
-  }
-
   void prepare_indices() noexcept {
     const uint32_t vertex_count = (details) * (details);
     std::vector<uint32_t> indices_buf_(vertex_count * 6);
@@ -111,7 +106,7 @@ public:
     // auto offset = glm::vec3(offset_.x, offset_.y, offset_.z);
     auto offset = glm::vec3(0.f, 0.f, 0.f);
 
-    pprog_->use_program();
+    pprog_->use();
     vbo_.bind();
     ibo_.bind();
     glUniformMatrix4fv(unf_modl_, 1, GL_FALSE, glm::value_ptr(m));
@@ -160,30 +155,27 @@ public:
         offset_{0.0L, 0.0L, 0.0L} {
     std::string vs_text, fs_text;
 
-    if (!read_file("glsl/surface.vs", vs_text)) {
-      error("file not found: glsl/surface.vs");
-      return;
-    }
-    
-    if (!read_file("glsl/surface.fs", fs_text)) {
-      error("file not found: glsl/surface.fs");
-      return;
+    assert(read_file("glsl/surface.vs", vs_text), "file not found: glsl/surface.vs");
+    assert(read_file("glsl/surface.fs", fs_text), "file not found: glsl/surface.fs");
+
+    pvert = make_ptr_u<gl::shader>(GL_VERTEX_SHADER, error_msg_);
+    pfrag = make_ptr_u<gl::shader>(GL_FRAGMENT_SHADER, error_msg_);
+
+    if (pvert->compile(vs_text) && pfrag->compile(fs_text)) {
+      pprog_ = make_ptr_u<gl::program>(error_msg_);
+      if (pprog_->link_shaders(*pvert, *pfrag)) {
+        prepare_vertex();
+        prepare_indices();
+        unf_modl_ = pprog_->uniform("unfm_model");
+        unf_vp_ = pprog_->uniform("unfm_vp");
+        unf_offset_ = pprog_->uniform("unfm_offset");
+        atb_posn_ = pprog_->attribute("attb_pos");
+        vbo_.bind();
+        glEnableVertexAttribArray(atb_posn_);
+        glVertexAttribPointer(atb_posn_, 3, GL_FLOAT, GL_FALSE, vbo_.type_size, (void *)0);
+      }
     }
 
-    pprog_ = make_ptr_u<gl_program>(vs_text, fs_text, error_msg_);
-    if (!pprog_->is_ready()) {
-      error("surface_node initialized failed");
-      return;
-    }
-
-    unf_modl_ = pprog_->obtain_uniform("unfm_model");
-    unf_vp_ = pprog_->obtain_uniform("unfm_vp");
-    unf_offset_ = pprog_->obtain_uniform("unfm_offset");
-    atb_posn_ = pprog_->obtain_attribute("attb_pos");
-    prepare_vertex();
-    prepare_indices();
-    glEnableVertexAttribArray(atb_posn_);
-    glVertexAttribPointer(atb_posn_, 3, GL_FLOAT, GL_FALSE, vbo_.type_size, (void*)0);
   }
 
   ~impl() = default;
@@ -212,7 +204,8 @@ private:
   const coord::tile_number tile_;
   std::vector<uint32_t> indices_buf_;
   GLuint indices_id_;
-  u_ptr<gl_program> pprog_;
+  u_ptr<gl::program> pprog_;
+  u_ptr<gl::shader> pvert, pfrag;
   gl_error_callback error_msg_;
 
   GLint unf_modl_, unf_vp_, unf_offset_;
@@ -221,11 +214,6 @@ private:
   gl_index_buffer<uint32_t>     ibo_;
   compute_vertex offset_;
 };
-
-bool surface_node::is_ready() const noexcept {
-
-  return nullptr != pimpl && pimpl->is_ready();
-}
 
 void surface_node::draw(const camera &cmr) noexcept {
   if (nullptr != pimpl) {

@@ -11,7 +11,7 @@ namespace scene {
 class surface_layer::impl {
 public:
   inline void gen_indices_buffer() noexcept {
-    const uint32_t vert_count = vertex_details * vertex_details;
+    const uint32_t vert_count = static_cast<uint32_t>(vertex_details * vertex_details);
     std::vector<uint16_t> buffer(vert_count * 6);
     auto it = buffer.begin();
     for (size_t i = 0; i < vertex_details; ++i) {
@@ -48,8 +48,8 @@ public:
   }
 
 private:
-  inline size_t to_vertex_index(size_t row, size_t col) const noexcept {
-    return row * (vertex_details) + col;
+  inline uint16_t to_vertex_index(size_t row, size_t col) const noexcept {
+    return static_cast<uint16_t>(row * (vertex_details) + col);
   }
 
 private:

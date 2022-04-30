@@ -15,8 +15,8 @@ public:
 
   inline void gen_vertex_buffer(size_t vd) noexcept {
     using namespace glm;
-    const uint32_t vert_count = (vd + 1) * (vd + 1);
-    const double tile_stride = 1.L / static_cast<double>(vd);
+    const uint32_t vert_count = static_cast<uint32_t>((vd + 1) * (vd + 1));
+    const double tile_stride = 1.f / static_cast<double>(vd);
     const uint32_t zoom = node_details.zoom;
     const double xtile = node_details.xtile,
                  ytile = node_details.ytile;
@@ -36,9 +36,9 @@ public:
             computing_buffer.y = coord::tilex_to_long(zoom, xtile + tile_stride * j));
         computing_buffer.z = 0.0;
         coord::geodetic_to_ecef(computing_buffer.x, computing_buffer.y, computing_buffer.z);
-        offset_.x += computing_buffer.x;
-        offset_.y += computing_buffer.y;
-        offset_.z += computing_buffer.z;
+        offx += computing_buffer.x;
+        offy += computing_buffer.y;
+        offz += computing_buffer.z;
       }
     }
 
@@ -47,16 +47,16 @@ public:
     auto v_it = computing.begin();
     for (auto &v : buffer) {
       auto &compute_v = *v_it++;
-      v.x = (float) compute_v.x - offset_.x;
-      v.y = (float) compute_v.y - offset_.y;
-      v.z = (float) compute_v.z - offset_.z;
+      v.x = static_cast<float>(compute_v.x - offx);
+      v.y = static_cast<float>(compute_v.y - offy);
+      v.z = static_cast<float>(compute_v.z - offz);
     }
 
     vbo_.generate_buffer();
     vbo_.bind_buffer_data(buffer);
   }
 
-  inline void draw(const camera &cmr, size_t indices_count) noexcept {
+  inline void draw([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
     auto m = rotate(mat4x4{1.0f}, radians((float)glfwGetTime() * 5), vec3(0.f, 1.f, 1.f));
 
@@ -66,10 +66,10 @@ public:
     program->bind_model_uniform(m);
     glPointSize(10);
     program->bind_offset_uniform(vec3{0.5f});
-    glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_SHORT, nullptr);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
     program->bind_offset_uniform(vec3{1.0f, 1.0f, 1.0f});
-    glDrawArrays(GL_POINTS, 0, vbo_.size());
-    glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_SHORT, nullptr);
+    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(vbo_.size()));
+    glDrawElements(GL_LINE_STRIP, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
 
   impl(maptile &&tile) noexcept

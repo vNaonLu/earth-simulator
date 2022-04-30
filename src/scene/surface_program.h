@@ -82,11 +82,11 @@ public:
         u_model_{-1}, u_offset_{-1}, a_pos_{-1},
         error_msg_{err_cb} {
     std::string vs_text, fs_text;
-    assert(read_file("glsl/surface.vs", vs_text), "file not found: glsl/surface.vs");
-    assert(read_file("glsl/surface.fs", fs_text), "file not found: glsl/surface.fs");
-    assert(vert_.compile(vs_text), "failed to compile vertex shader");
-    assert(frag_.compile(fs_text), "failed to compile fragment shader");
-    assert(link_shaders(vert_, frag_), "failed to link program");
+    assert(read_file("glsl/surface.vs", vs_text));
+    assert(read_file("glsl/surface.fs", fs_text));
+    assert(vert_.compile(vs_text));
+    assert(frag_.compile(fs_text));
+    assert(link_shaders(vert_, frag_));
     u_model_ = uniform("unfm_model");
     u_vp = uniform("unfm_vp");
     u_offset_ = uniform("unfm_offset");

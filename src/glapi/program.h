@@ -21,7 +21,7 @@ public:
    * 
    */
   inline void use() const noexcept {
-    assert(id_ != 0, "program has been not initialized");
+    assert(id_ != 0);
     glUseProgram(id_);
   }
 
@@ -44,7 +44,7 @@ public:
    * @return the attribute location.
    */
   inline GLint attribute(std::string_view att_name) const noexcept {
-    assert(id_ != 0, "program has been not initialized");
+    assert(id_ != 0);
 
     return glGetAttribLocation(id_, att_name.data());
   }
@@ -107,16 +107,16 @@ private:
 
   template <typename shader1, typename shader2, typename... shaders>
   inline void attach(shader1 &&s1, shader2 &&s2, shaders&&... ss) noexcept {
-    assert(id_ != 0, "program has been not initialized");
-    assert(s1.id() != 0, "shader has not been inititaled");
+    assert(id_ != 0);
+    assert(s1.id() != 0);
     glAttachShader(id_, s1.id());
     attach<shader2, shaders...>(std::forward<shader2>(s2), std::forward<shaders>(ss)...);
   }
   
   template <typename shader1>
   inline void attach(shader1 &&s1) noexcept {
-    assert(id_ != 0, "program has been not initialized");
-    assert(s1.id() != 0, "shader has not been inititaled");
+    assert(id_ != 0);
+    assert(s1.id() != 0);
     glAttachShader(id_, s1.id());
   }
 

@@ -21,10 +21,10 @@ public:
   inline void generate_buffer(size_t count = 1) noexcept {
     assert(count > 0);
     if (ids_.size() > 0) {
-      glDeleteBuffers(ids_.size(), ids_.data());
+      glDeleteBuffers(static_cast<GLsizei>(ids_.size()), ids_.data());
     }
     ids_.resize(count);
-    glGenBuffers(count, ids_.data());
+    glGenBuffers(static_cast<GLsizei>(count), ids_.data());
   }
 
 protected:
@@ -38,7 +38,7 @@ protected:
 
   ~buffer_base() noexcept {
     if (!ids_.empty()) {
-      glDeleteBuffers(ids_.size(), ids_.data());
+      glDeleteBuffers(static_cast<GLsizei>(ids_.size()), ids_.data());
       ids_.clear();
     }
   }

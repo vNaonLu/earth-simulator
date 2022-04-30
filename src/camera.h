@@ -27,6 +27,49 @@ public:
 
     return res;
   }
+  /**
+   * @brief Obtain the camera position in ECEF coordinate
+   * 
+   * @return ECEF position
+   */
+  inline glm::dvec3 ecef() const noexcept {
+
+    return ecef_;
+  }
+
+  /**
+   * @brief Obtain the camera position in LLA coordinate
+   * 
+   * @return lat-lon-alt position
+   */
+  inline glm::vec3 lla() const noexcept {
+
+    return lla_;
+  }
+  
+  /**
+   * @brief Obtain up vector of camera
+   * 
+   * @return up-vector
+   */
+  inline glm::vec3 up() const noexcept {
+
+    return up_;
+  }
+
+  /**
+   * @brief Set the camera position and up-vector
+   * 
+   * @param lla specifies the LLA position.
+   * @param up specifies the oriented vector. 
+   */
+  inline void set_camera(const glm::vec3 &lla, const glm::vec3 &up) noexcept {
+    using namespace glm;
+    lla_ = lla;
+    up_ = normalize(up);
+    ecef_ = (dvec3)lla;
+    coord::geodetic_to_ecef<coord::TEST>(ecef_.x, ecef_.y, ecef_.z);
+  }
 
   /**
    * @brief Update the viewport height and width
@@ -39,25 +82,6 @@ public:
     viewport_.y = height;
   }
 
-  /**
-   * @brief Obtain the camera position in ECEF coordinate
-   * 
-   * @return ECEF position
-   */
-  inline glm::dvec3 get_ecef() const noexcept {
-
-    return ecef_;
-  }
-
-  /**
-   * @brief Obtain the camera position in LLA coordinate
-   * 
-   * @return lat-lon-alt position
-   */
-  inline glm::vec3 get_lla() const noexcept {
-
-    return lla_;
-  }
 
   /**
    * @brief Construct a new camera object
@@ -67,10 +91,11 @@ public:
    * @param lla_pos specifies the position in degrees latitude, longitude and altitude.
    */
   camera(int width, int height,
-         const glm::vec3 &lla_pos) noexcept
+         const glm::vec3 &lla_pos,
+         const glm::vec3 &up_vec) noexcept
       : viewport_{width, height},
         lla_{lla_pos},
-        up_{0.0f, 0.0f, 1.0f},
+        up_{up_vec},
         ecef_{(glm::dvec3)lla_pos} {
     coord::geodetic_to_ecef<coord::TEST>(ecef_.x, ecef_.y, ecef_.z);
   }

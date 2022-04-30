@@ -6,14 +6,18 @@
 #include "camera.h"
 #include "coord/transform.h"
 #include "surface_node.h"
+#include <controller/mouse.h>
 
-static void error_callback(int error, const char *msg);
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+static void error_callback(int, const char *);
+static void key_callback(GLFWwindow *, int, int, int, int);
+static void scroll_callback(GLFWwindow *, double, double);
+int width = 1080,
+    height = 1080;
+esim::camera camera{width, height, glm::vec3{0.f, 0.f, 3.f}, glm::vec3{0.f, 0.f, 1.f}};
 
 extern int idx;
   
 int main(...) {
-  int width = 1080, height = 1080;
   GLFWwindow* window;
   glfwSetErrorCallback(error_callback);
 
@@ -33,6 +37,7 @@ int main(...) {
   }
 
   glfwSetKeyCallback(window, key_callback);
+  glfwSetScrollCallback(window, scroll_callback);
   glfwMakeContextCurrent(window);
   gladLoadGL();
   glfwSwapInterval(1);
@@ -40,8 +45,6 @@ int main(...) {
   esim::surface_node p_surf1(0, 0, 0, [](const char *msg) {
     std::cout << "[x] error: " << msg << std::endl;
   });
-
-  esim::camera camera{width, height, glm::vec3(0.f, 0.f, 3.f)};
 
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -66,6 +69,16 @@ int main(...) {
 
 static void error_callback([[maybe_unused]] int error, const char *msg) {
   std::cout << "[x] error occured: " << msg << std::endl;
+}
+
+static void scroll_callback([[maybe_unused]] GLFWwindow *window,
+                            [[maybe_unused]] double xoffset,
+                            [[maybe_unused]] double yoffset) {
+  if (yoffset < 0) {
+    esim::ctrl::mouse::vertical_zoom_in(camera, -yoffset);
+  } else {
+    esim::ctrl::mouse::vertical_zoom_out(camera, yoffset);
+  }
 }
 
 static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {

@@ -1,8 +1,10 @@
 #ifndef __ESIM_SCENE_SCENE_ENGINE_H_
 #define __ESIM_SCENE_SCENE_ENGINE_H_
 
+#include "scene_message.h"
 #include <functional>
 #include <utils.h>
+#include <utils/observer.h>
 
 namespace esim {
 
@@ -13,7 +15,7 @@ namespace scene {
  * rendering space.
  *
  */
-class scene_engine final {
+class scene_engine : public utils::observer<u_ptr<scene_message>> {
 public:
   /**
    * @brief Update the viewport size
@@ -75,6 +77,9 @@ public:
    * 
    */
   ~scene_engine() noexcept;
+
+protected:
+  void update(u_ptr<scene_message> &&msg) noexcept final;
 
 private:
   class impl;

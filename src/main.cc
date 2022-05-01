@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <iostream>
+#include <scene/scene_controller.h>
 #include <scene/scene_engine.h>
 
 static void error_callback(int, const char *);
@@ -10,7 +11,8 @@ static void scroll_callback(GLFWwindow *, double, double);
 int width = 1080,
     height = 1080;
 
-esim::u_ptr<esim::scene::scene_engine> esim_engine;
+esim::u_ptr<esim::scene::scene_engine>     esim_engine;
+esim::u_ptr<esim::scene::scene_controller> esim_ctrler;
 
 int main(...) {
   GLFWwindow* window;
@@ -38,12 +40,16 @@ int main(...) {
   glfwSwapInterval(1);
 
   esim_engine = esim::make_ptr_u<esim::scene::scene_engine>();
+  esim_ctrler = esim::make_ptr_u<esim::scene::scene_controller>();
+  esim_ctrler->subscribe(esim_engine.get());
+  esim_engine->subscribe(esim_ctrler.get());
+  esim_ctrler->update_viewport(width, height);
 
   esim_engine->start(
       [&]() {
         if (!glfwWindowShouldClose(window)) {
           glfwGetFramebufferSize(window, &width, &height);
-          esim_engine->update_viewport(width, height);
+          esim_ctrler->update_viewport(width, height);
         } else {
           esim_engine->stop();
         }

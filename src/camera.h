@@ -12,8 +12,6 @@ namespace esim {
 
 class camera {
 public:
-  /// TODO: fifo atomic get position
-
   /**
    * @brief Obtain view and projection matrix
    * 
@@ -21,8 +19,9 @@ public:
    */
   inline glm::mat4x4 get_vp() const noexcept {
     using namespace glm;
+    const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
     const static auto origin = vec3{0.f, 0.f, 0.f};
-    auto res = perspective(radians(45.f), (float)viewport_.x / (float)viewport_.y, 0.1f, 100.0f);
+    auto res = perspective(radians(45.f), aspect, 0.1f, 100.0f);
     res *= lookAt((vec3)ecef_, origin, up_);
 
     return res;
@@ -104,6 +103,14 @@ public:
         up_{up_vec},
         ecef_{(glm::dvec3)lla_pos} {
     coord::geodetic_to_ecef<coord::TEST>(ecef_.x, ecef_.y, ecef_.z);
+  }
+
+  inline bool operator==(const camera &rhs) const noexcept {
+    return std::memcmp(this, &rhs, sizeof(camera)) == 0;
+  }
+  
+  inline bool operator!=(const camera &rhs) const noexcept {
+    return std::memcmp(this, &rhs, sizeof(camera)) != 0;
   }
 
 private:

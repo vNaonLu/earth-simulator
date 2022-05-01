@@ -48,6 +48,7 @@ const class camera &scene_controller::camera() const noexcept {
 void scene_controller::update_viewport(uint32_t width, uint32_t height) noexcept{
   assert(nullptr != pimpl_);
   pimpl_->update_viewport(width, height);
+  notify(make_ptr_u<scene_message>(pimpl_->camera()));
 }
 
 void scene_controller::zoom_in(double tick) noexcept {
@@ -64,6 +65,15 @@ scene_controller::scene_controller() noexcept
     : pimpl_{make_ptr_u<impl>()} {}
 
 scene_controller::~scene_controller() noexcept {}
+
+void scene_controller::update(u_ptr<scene_message> &&msg) noexcept {
+  assert(nullptr != pimpl_);
+
+  if (msg->camera != pimpl_->camera()) {
+    std::cout << 123 << std::endl;
+    notify(make_ptr_u<scene_message>(pimpl_->camera()));
+  }
+}
 
 } // namespace scene
 

@@ -1,8 +1,10 @@
 #ifndef __ESIM_SCENE_SCENE_CONTROLLER_H_
 #define __ESIM_SCENE_SCENE_CONTROLLER_H_
 
+#include "scene_message.h"
 #include <camera.h>
 #include <utils.h>
+#include <utils/observer.h>
 
 namespace esim {
 
@@ -13,7 +15,7 @@ namespace scene {
  * camera position from mouse or keyboard input.
  *
  */
-class scene_controller {
+class scene_controller : public utils::observer<u_ptr<scene_message>> {
 public:
   /**
    * @brief Obtain the scene camera
@@ -55,6 +57,9 @@ public:
    * 
    */
   ~scene_controller() noexcept;
+
+protected:
+  void update(u_ptr<scene_message> &&msg) noexcept final;
 
 private:
   class impl;

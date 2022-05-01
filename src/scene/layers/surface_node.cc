@@ -1,9 +1,9 @@
 #include "surface_node.h"
 #include "coord/transform.h"
 #include "glapi/buffer_object.h"
-#include "programs/bounding_box_program.h"
-#include "programs/surface_program.h"
 #include <glfw/glfw3.h>
+#include <scene/programs/bounding_box_program.h>
+#include <scene/programs/surface_program.h>
 #include <vector>
 
 namespace esim {

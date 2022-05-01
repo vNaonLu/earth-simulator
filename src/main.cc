@@ -2,19 +2,15 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <iostream>
-
-#include "camera.h"
-#include "coord/transform.h"
-#include <controller/mouse.h>
-#include <glapi/gl_helper.h>
-#include <scene/surface_layer.h>
+#include <scene/scene_engine.h>
 
 static void error_callback(int, const char *);
 static void key_callback(GLFWwindow *, int, int, int, int);
 static void scroll_callback(GLFWwindow *, double, double);
 int width = 1080,
     height = 1080;
-esim::camera camera{width, height, glm::vec3{0.f, 0.f, 3.f}, glm::vec3{0.f, 0.f, 1.f}};
+
+esim::u_ptr<esim::scene::scene_engine> esim_engine;
 
 int main(...) {
   GLFWwindow* window;
@@ -28,7 +24,7 @@ int main(...) {
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  window = glfwCreateWindow(width, height, "Simple example", NULL, NULL);
+  window = glfwCreateWindow(width, height, "Earth Simulator", NULL, NULL);
   if (!window) {
     std::cout << "[x] failed to create window." << std::endl;
     glfwTerminate();
@@ -41,30 +37,21 @@ int main(...) {
   gladLoadGL();
   glfwSwapInterval(1);
 
-  esim::scene::surface_layer base_layer(15);
+  esim_engine = esim::make_ptr_u<esim::scene::scene_engine>();
 
-  while (!glfwWindowShouldClose(window)) {
-    glfwGetFramebufferSize(window, &width, &height);
-    camera.set_viewport(width, height);
-    glViewport(0, 0, width, height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    // glDepthFunc(GL_ALWAYS);
-
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
-
-    base_layer.draw(camera);
-    base_layer.draw_bounding_box(camera);
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
+  esim_engine->start(
+      [&]() {
+        if (!glfwWindowShouldClose(window)) {
+          glfwGetFramebufferSize(window, &width, &height);
+          esim_engine->update_viewport(width, height);
+        } else {
+          esim_engine->stop();
+        }
+      },
+      [&]() {
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+      });
  
   glfwDestroyWindow(window);
   glfwTerminate();
@@ -79,9 +66,9 @@ static void scroll_callback([[maybe_unused]] GLFWwindow *window,
                             [[maybe_unused]] double xoffset,
                             [[maybe_unused]] double yoffset) {
   if (yoffset < 0) {
-    esim::ctrl::mouse::vertical_zoom_in(camera, -yoffset);
+    esim_engine->zoom_in(-yoffset);
   } else {
-    esim::ctrl::mouse::vertical_zoom_out(camera, yoffset);
+    esim_engine->zoom_out(yoffset);
   }
 }
 

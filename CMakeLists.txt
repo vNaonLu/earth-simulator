@@ -19,8 +19,11 @@ set(ES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(
   ${PROJECT_NAME}
   ${ES_SOURCE_DIR}/main.cc
-  ${ES_SOURCE_DIR}/scene/surface_node.cc
-  ${ES_SOURCE_DIR}/scene/surface_layer.cc)
+  ${ES_SOURCE_DIR}/scene/layers/surface_node.cc
+  ${ES_SOURCE_DIR}/scene/layers/surface_layer.cc
+  ${ES_SOURCE_DIR}/scene/scene_controller.cc
+  ${ES_SOURCE_DIR}/scene/scene_renderer.cc
+  ${ES_SOURCE_DIR}/scene/scene_engine.cc)
 
 target_include_directories(
   ${PROJECT_NAME} 

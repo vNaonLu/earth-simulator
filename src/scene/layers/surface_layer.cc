@@ -1,8 +1,8 @@
 #include "surface_layer.h"
 #include "glapi/buffer_object.h"
-#include "programs/bounding_box_program.h"
-#include "programs/surface_program.h"
 #include "surface_node.h"
+#include <scene/programs/bounding_box_program.h>
+#include <scene/programs/surface_program.h>
 #include <vector>
 
 namespace esim {

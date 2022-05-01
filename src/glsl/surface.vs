@@ -1,4 +1,4 @@
-#version 110
+#version 330
 uniform mat4 unfm_model;
 uniform mat4 unfm_vp;
 uniform vec3 unfm_offset;

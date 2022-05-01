@@ -25,9 +25,12 @@ public:
     }
     ids_.resize(count);
     glGenBuffers(static_cast<GLsizei>(count), ids_.data());
+    gen_buffer_stored(count);
   }
 
 protected:
+  virtual void gen_buffer_stored(size_t count) noexcept = 0;
+
   inline void bind_buffer(GLenum type = GL_ARRAY_BUFFER, size_t idx = 0) const noexcept {
     assert(idx < ids_.size());
     glBindBuffer(type, ids_[idx]);
@@ -64,25 +67,25 @@ public:
   static_assert(std::is_integral_v<type>, "type must be integral type.");
 
   /**
-   * @brief Bind the Buffer Data and withing move data side effect
+   * @brief Bind the Buffer Data
    * 
    * @param data specifies the target data to bind. 
    * @param usage specifies the usage of buffer.
    * @param idx specifies the index of buffer.
    */
-  inline void bind_buffer_data(std::vector<type> &data,
+  inline void bind_buffer_data(std::vector<type> &&data,
                                GLenum usage = GL_STATIC_DRAW,
                                size_t idx = 0) noexcept {
     assert(!data.empty());
     GLint orig_bound_id;
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &orig_bound_id);
     bind(idx);
-    buffer_ = std::move(data);
+    auto &buf = buffer_.at(idx) = std::move(data);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 type_size * buffer_.size(),
-                 buffer_.data(), usage);
+                 type_size * buf.size(),
+                 buf.data(), usage);
     if (0 != orig_bound_id) {
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_BINDING, orig_bound_id);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, orig_bound_id);
     }
   }
 
@@ -98,26 +101,33 @@ public:
   /**
    * @brief Obtain buffer size count
    * 
+   * @param idx specifies the target index to bind. Default by 0.
    * @return size_t the count of buffer.
    */
-  inline size_t size() const noexcept {
+  inline size_t size(size_t idx = 0) const noexcept {
 
-    return buffer_.size();
+    return buffer_.at(idx).size();
   }
   
   /**
    * @brief Get buffer element
    * 
    * @param idx specifies the target index.
+   * @param buffer_idx specifies the target index to bind. Default by 0.
    * @return the reference to buffer element.
    */
-  inline const base_type &at(size_t idx) const noexcept {
+  inline const base_type &at(size_t idx, size_t buffer_idx = 0) const noexcept {
 
-    return buffer_.at(idx);
+    return buffer_.at(buffer_idx).at(idx);
   }
 
 private:
-  std::vector<base_type> buffer_;
+  inline void gen_buffer_stored(size_t count) noexcept final {
+    buffer_.resize(count);
+  }
+
+private:
+  std::vector<std::vector<base_type>> buffer_;
 };
 
 /**
@@ -132,30 +142,30 @@ public:
   inline static constexpr size_t type_size = sizeof(type);
 
   /**
-   * @brief Bind the Buffer Data and withing move data side effect
+   * @brief Bind the Buffer Data
    * 
    * @param data specifies the target data to bind. 
    * @param usage specifies the usage of buffer.
    * @param idx specifies the index of buffer.
    */
-  inline void bind_buffer_data(std::vector<type> &data,
+  inline void bind_buffer_data(std::vector<type> &&data,
                                GLenum usage = GL_STATIC_DRAW,
                                size_t idx = 0) noexcept {
     assert(!data.empty());
     GLint orig_bound_id;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &orig_bound_id);
     bind(idx);
-    buffer_ = std::move(data);
+    auto &buf = buffer_.at(idx) = std::move(data);
     glBufferData(GL_ARRAY_BUFFER,
-                 type_size * buffer_.size(),
-                 buffer_.data(), usage);
+                 type_size * buf.size(),
+                 buf.data(), usage);
     if (0 != orig_bound_id) {
       glBindBuffer(GL_ARRAY_BUFFER, orig_bound_id);
     }
   }
 
   /**
-   * @brief Bind Index Buffer
+   * @brief Bind Vertex Buffer
    * 
    * @param idx specifies the target index to bind. Default by 0.
    */
@@ -166,11 +176,12 @@ public:
   /**
    * @brief Obtain buffer size count
    * 
+   * @param idx specifies the target index to bind. Default by 0.
    * @return size_t the count of buffer.
    */
-  inline size_t size() const noexcept {
+  inline size_t size(size_t idx = 0) const noexcept {
 
-    return buffer_.size();
+    return buffer_.at(idx).size();
   }
 
   /**
@@ -179,13 +190,18 @@ public:
    * @param idx specifies the target index.
    * @return the reference to buffer element.
    */
-  inline const base_type &at(size_t idx) const noexcept {
+  inline const base_type &at(size_t idx, size_t buffer_idx = 0) const noexcept {
 
-    return buffer_.at(idx);
+    return buffer_.at(buffer_idx).at(idx);
   }
 
 private:
-  std::vector<base_type> buffer_;
+  inline void gen_buffer_stored(size_t count) noexcept final {
+    buffer_.resize(count);
+  }
+
+private:
+  std::vector<std::vector<base_type>> buffer_;
 };
 
 } // namespace gl

@@ -33,6 +33,22 @@ public:
   void draw(const camera &cmr, size_t indices_count) noexcept;
 
   /**
+   * @brief Draw the surface grid
+   * 
+   * @param cmr specifies the camera information.
+   * @param indices_count specifies the indices count.
+   */
+  void draw_grid(const camera &cmr, size_t indices_count) noexcept;
+  
+  /**
+   * @brief Draw the bounding box
+   * 
+   * @param cmr specifies the camera information.
+   * @param indices_count specifies the indices count.
+   */
+  void draw_bounding_box(const camera &cmr, size_t indices_count) noexcept;
+
+  /**
    * @brief Generate vertex buffer
    * 
    * @param vertex_details specifies the details value.

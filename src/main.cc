@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "coord/transform.h"
 #include <controller/mouse.h>
+#include <glapi/gl_helper.h>
 #include <scene/surface_layer.h>
 
 static void error_callback(int, const char *);
@@ -43,16 +44,23 @@ int main(...) {
   esim::scene::surface_layer base_layer(15);
 
   while (!glfwWindowShouldClose(window)) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-    // glDepthFunc(GL_ALWAYS);
-    glFrontFace(GL_CCW);
     glfwGetFramebufferSize(window, &width, &height);
     camera.set_viewport(width, height);
     glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    // glDepthFunc(GL_ALWAYS);
+
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 
     base_layer.draw(camera);
+    base_layer.draw_bounding_box(camera);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

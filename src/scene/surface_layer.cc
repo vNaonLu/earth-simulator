@@ -1,4 +1,5 @@
 #include "surface_layer.h"
+#include "bounding_box_program.h"
 #include "glapi/buffer_object.h"
 #include "surface_node.h"
 #include "surface_program.h"
@@ -25,24 +26,63 @@ public:
       }
     }
 
-    ibo_.generate_buffer();
-    ibo_.bind_buffer_data(buffer);
+    ibo_.bind_buffer_data(std::move(buffer), GL_STATIC_DRAW, 0);
+  }
+  
+  inline void gen_bounding_box_indices_buffer() noexcept {
+    std::vector<uint16_t> buffer(24);
+    auto it = buffer.begin();
+    /// box top
+    *it++ = 0; *it++ = 1;
+    *it++ = 1; *it++ = 3;
+    *it++ = 3; *it++ = 2;
+    *it++ = 2; *it++ = 0;
+
+    /// box bottom
+    *it++ = 4; *it++ = 5;
+    *it++ = 5; *it++ = 7;
+    *it++ = 7; *it++ = 6;
+    *it++ = 6; *it++ = 4;
+
+    /// box side
+    *it++ = 0; *it++ = 4;
+    *it++ = 1; *it++ = 5;
+    *it++ = 2; *it++ = 6;
+    *it++ = 3; *it++ = 7;
+
+    ibo_.bind_buffer_data(std::move(buffer), GL_STATIC_DRAW, 1);
   }
 
   inline void draw(const camera &cmr) noexcept {
     using namespace glm;
     auto program = surface_program::get();
+    ibo_.bind(0);
     program->use();
     program->bind_vp_uniform(cmr.get_vp());
-    ibo_.bind();
     for (auto &node : drawings) {
       node->draw(cmr, ibo_.size());
+      node->draw_grid(cmr, ibo_.size(0));
+    }
+  }
+  
+  inline void draw_bounding_box(const camera &cmr) noexcept {
+    using namespace glm;
+    auto program = bounding_box_program::get();
+    ibo_.bind(1);
+    program->use();
+    program->bind_vp_uniform(cmr.get_vp());
+    for (auto &node : drawings) {
+      node->draw_bounding_box(cmr, ibo_.size(1));
     }
   }
 
   impl(size_t vd) noexcept
       : vertex_details{vd} {
+    ibo_.generate_buffer(2);
     gen_indices_buffer();
+    gen_bounding_box_indices_buffer();
+
+    /// TODO: node tree
     drawings.emplace_back(make_ptr_u<surface_node>(maptile{0, 0, 0}));
     drawings.front()->gen_vertex(vertex_details);
   }
@@ -54,13 +94,20 @@ private:
 
 private:
   size_t vertex_details;
-  gl::index_buffer<uint16_t> ibo_;
+  /// 0 stores normal indices, and 1 stores bounding box.
+  gl::index_buffer<uint16_t>       ibo_;
   std::vector<u_ptr<surface_node>> drawings;
 };
 
 void surface_layer::draw(const camera &cmr) noexcept {
   if (nullptr != pimpl) {
     pimpl->draw(cmr);
+  }
+}
+
+void surface_layer::draw_bounding_box(const camera &cmr) noexcept {
+  if (nullptr != pimpl) {
+    pimpl->draw_bounding_box(cmr);
   }
 }
 

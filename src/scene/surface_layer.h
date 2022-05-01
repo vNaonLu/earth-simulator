@@ -19,6 +19,13 @@ public:
   void draw(const camera &cmr) noexcept;
 
   /**
+   * @brief Draw the bounding box of surface layer
+   * 
+   * @param cmr specifies the camera information.
+   */
+  void draw_bounding_box(const camera &cmr) noexcept;
+
+  /**
    * @brief Construct a new surface layer object
    * 
    * @param node_details specifies the details of surface_node.

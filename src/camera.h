@@ -13,18 +13,27 @@ namespace esim {
 class camera {
 public:
   /**
-   * @brief Obtain view and projection matrix
+   * @brief Obtain projection matrix
    * 
-   * @return A VP matrix.
+   * @return A projection matrix.
    */
-  inline glm::mat4x4 get_vp() const noexcept {
+  inline glm::mat4x4 projection() const noexcept {
     using namespace glm;
     const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
+    
+    return perspective(radians(45.f), aspect, 0.1f, 100.0f);
+  }
+  
+  /**
+   * @brief Obtain view matrix
+   * 
+   * @return A view matrix.
+   */
+  inline glm::mat4x4 view() const noexcept {
+    using namespace glm;
     const static auto origin = vec3{0.f, 0.f, 0.f};
-    auto res = perspective(radians(45.f), aspect, 0.1f, 100.0f);
-    res *= lookAt((vec3)ecef_, origin, up_);
 
-    return res;
+    return lookAt((vec3)ecef_, origin, up_);
   }
 
   inline const glm::ivec2 &viewport() const noexcept {

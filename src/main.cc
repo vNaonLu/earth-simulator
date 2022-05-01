@@ -38,6 +38,7 @@ int main(...) {
   glfwMakeContextCurrent(window);
   gladLoadGL();
   glfwSwapInterval(1);
+  glfwGetFramebufferSize(window, &width, &height);
 
   esim_engine = esim::make_ptr_u<esim::scene::scene_engine>();
   esim_ctrler = esim::make_ptr_u<esim::scene::scene_controller>();
@@ -47,18 +48,13 @@ int main(...) {
 
   esim_engine->start(
       [&]() {
-        if (!glfwWindowShouldClose(window)) {
-          glfwGetFramebufferSize(window, &width, &height);
-          esim_ctrler->update_viewport(width, height);
-        } else {
+        if (glfwWindowShouldClose(window)) {
           esim_engine->stop();
         }
       },
-      [&]() {
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-      });
- 
+      [&]() { glfwSwapBuffers(window); },
+      [&]() { glfwPollEvents(); });
+
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
@@ -72,9 +68,9 @@ static void scroll_callback([[maybe_unused]] GLFWwindow *window,
                             [[maybe_unused]] double xoffset,
                             [[maybe_unused]] double yoffset) {
   if (yoffset < 0) {
-    esim_engine->zoom_in(-yoffset);
+    esim_ctrler->zoom_in(-yoffset);
   } else {
-    esim_engine->zoom_out(yoffset);
+    esim_ctrler->zoom_out(yoffset);
   }
 }
 

@@ -53,12 +53,14 @@ void scene_controller::update_viewport(uint32_t width, uint32_t height) noexcept
 
 void scene_controller::zoom_in(double tick) noexcept {
   assert(nullptr != pimpl_);
-  return pimpl_->zoom_in(tick);
+  pimpl_->zoom_in(tick);
+  notify(make_ptr_u<scene_message>(pimpl_->camera()));
 }
 
 void scene_controller::zoom_out(double tick) noexcept {
   assert(nullptr != pimpl_);
-  return pimpl_->zoom_out(tick);
+  pimpl_->zoom_out(tick);
+  notify(make_ptr_u<scene_message>(pimpl_->camera()));
 }
 
 scene_controller::scene_controller() noexcept
@@ -69,8 +71,9 @@ scene_controller::~scene_controller() noexcept {}
 void scene_controller::update(u_ptr<scene_message> &&msg) noexcept {
   assert(nullptr != pimpl_);
 
+  std::cout << glm::to_string(msg->camera.viewport()) << std::endl;
+
   if (msg->camera != pimpl_->camera()) {
-    std::cout << 123 << std::endl;
     notify(make_ptr_u<scene_message>(pimpl_->camera()));
   }
 }

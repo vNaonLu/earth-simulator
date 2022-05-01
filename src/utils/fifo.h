@@ -178,6 +178,16 @@ public:
   }
 
   /**
+   * @brief Check if the queue is empty
+   * 
+   * @return true if fifo is empty, false otherwise.
+   */
+  inline bool empty() const noexcept {
+
+    return head(std::memory_order_relaxed) == tail(memory_order_relaxed);
+  }
+
+  /**
    * @brief Construct a new fifo object
    * 
    * @param size specifies the size of fifo.

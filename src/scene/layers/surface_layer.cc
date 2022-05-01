@@ -58,7 +58,8 @@ public:
     auto program = surface_program::get();
     ibo_.bind(0);
     program->use();
-    program->bind_vp_uniform(cmr.get_vp());
+    program->bind_view_uniform(cmr.view());
+    program->bind_proj_uniform(cmr.projection());
     for (auto &node : drawings) {
       node->draw(cmr, ibo_.size());
       node->draw_grid(cmr, ibo_.size(0));
@@ -70,7 +71,8 @@ public:
     auto program = bounding_box_program::get();
     ibo_.bind(1);
     program->use();
-    program->bind_vp_uniform(cmr.get_vp());
+    program->bind_view_uniform(cmr.view());
+    program->bind_proj_uniform(cmr.projection());
     for (auto &node : drawings) {
       node->draw_bounding_box(cmr, ibo_.size(1));
     }

@@ -36,13 +36,24 @@ public:
   }
 
   /**
-   * @brief Bind view perspective uniform 
+   * @brief Bind perspective matrix uniform 
    * 
    * @param val specifies the mat4x4 value.
    */
   template <typename type>
-  inline void bind_vp_uniform(type &&val) const noexcept {
-    glUniformMatrix4fv(u_vp, 1, GL_FALSE,
+  inline void bind_proj_uniform(type &&val) const noexcept {
+    glUniformMatrix4fv(u_proj_, 1, GL_FALSE,
+                       glm::value_ptr(std::forward<type>(val)));
+  }
+  
+  /**
+   * @brief Bind view matrix uniform 
+   * 
+   * @param val specifies the mat4x4 value.
+   */
+  template <typename type>
+  inline void bind_view_uniform(type &&val) const noexcept {
+    glUniformMatrix4fv(u_view_, 1, GL_FALSE,
                        glm::value_ptr(std::forward<type>(val)));
   }
 
@@ -88,7 +99,8 @@ public:
     assert(frag_.compile(fs_text));
     assert(link_shaders(vert_, frag_));
     u_model_ = uniform("unfm_model");
-    u_vp = uniform("unfm_vp");
+    u_view_ = uniform("unfm_view");
+    u_proj_ = uniform("unfm_proj");
     u_offset_ = uniform("unfm_offset");
     a_pos_ = attribute("attb_pos");
   }
@@ -132,7 +144,7 @@ private:
 private:
   gl::shader vert_,
              frag_;
-  GLint      u_model_, u_vp, u_offset_;
+  GLint      u_model_, u_view_, u_proj_, u_offset_;
   GLint      a_pos_;
   gl_error_callback error_msg_;
 };

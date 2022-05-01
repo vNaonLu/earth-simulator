@@ -18,20 +18,14 @@ namespace scene {
 class scene_engine : public utils::observer<u_ptr<scene_message>> {
 public:
   /**
-   * @brief Update the viewport size
-   * 
-   * @param width specifies the width of viewport.
-   * @param height specifies the height of viewport.
-   */
-  void update_viewport(uint32_t width, uint32_t height) noexcept;
-
-  /**
    * @brief Render the whole scene endless
    * 
    * @param before_rd specifies the callback before rendering a frame.
+   * @param swap_buffer specifies the callback to swap buffer.
    * @param after_rd specifies the callback after rendering a frame.
    */
   void start(std::function<void()> before_rd,
+             std::function<void()> swap_buffer,
              std::function<void()> after_rd) noexcept;
 
   /**
@@ -51,20 +45,6 @@ public:
    * 
    */
   void stop() noexcept;
-
-  /**
-   * @brief Zoom in the scene
-   * 
-   * @param tick specifies the zoom level
-   */
-  void zoom_in(double tick) noexcept;
-  
-  /**
-   * @brief Zoom out the scene
-   * 
-   * @param tick specifies the zoom level
-   */
-  void zoom_out(double tick) noexcept;
 
   /**
    * @brief Construct a new scene engine object

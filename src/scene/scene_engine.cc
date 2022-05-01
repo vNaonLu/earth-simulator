@@ -58,7 +58,8 @@ public:
   }
 
   impl() noexcept
-      : state_{to_raw(render_state::normal)},
+      : msg_queue_{512},
+        state_{to_raw(render_state::normal)},
         rderer_{make_ptr_u<scene_renderer>()},
         camera_{0, 0, glm::vec3{0.f, 0.0f, 0.3f}, glm::vec3{0.f, 0.f, 1.f}} {}
 
@@ -88,7 +89,6 @@ private:
 };
 
 void scene_engine::start(std::function<void()> before_rd,
-                         std::function<void()> swap_buffer,
                          std::function<void()> after_rd) noexcept {
   assert(nullptr != pimpl_);
   while (before_rd(), pimpl_->is_active()) {
@@ -98,11 +98,17 @@ void scene_engine::start(std::function<void()> before_rd,
       pimpl_->render();
       /// notify observer the last camera position
       notify(make_ptr_u<scene_message>(pimpl_->camera()));
-      swap_buffer();
+      after_rd();
     }
-
-    after_rd();
   }
+}
+
+void scene_engine::render() noexcept {
+  assert(nullptr != pimpl_);
+  pimpl_->poll_events();
+  pimpl_->render();
+  /// notify observer the last camera position
+  notify(make_ptr_u<scene_message>(pimpl_->camera()));
 }
 
 void scene_engine::pause() noexcept {

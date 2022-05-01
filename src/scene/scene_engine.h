@@ -21,12 +21,16 @@ public:
    * @brief Render the whole scene endless
    * 
    * @param before_rd specifies the callback before rendering a frame.
-   * @param swap_buffer specifies the callback to swap buffer.
    * @param after_rd specifies the callback after rendering a frame.
    */
   void start(std::function<void()> before_rd,
-             std::function<void()> swap_buffer,
              std::function<void()> after_rd) noexcept;
+             
+  /**
+   * @brief Draw a frame
+   * 
+   */
+  void render() noexcept;
 
   /**
    * @brief Puase rendering

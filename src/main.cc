@@ -5,11 +5,13 @@
 #include <scene/scene_controller.h>
 #include <scene/scene_engine.h>
 
+#include <thread>
+
 static void error_callback(int, const char *);
 static void key_callback(GLFWwindow *, int, int, int, int);
 static void scroll_callback(GLFWwindow *, double, double);
-int width = 1080,
-    height = 1080;
+static void framebuffer_size_callback(GLFWwindow *, int, int);
+static void window_refresh_callback(GLFWwindow *);
 
 esim::u_ptr<esim::scene::scene_engine>     esim_engine;
 esim::u_ptr<esim::scene::scene_controller> esim_ctrler;
@@ -26,6 +28,8 @@ int main(...) {
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  int width = 1080,
+      height = 1080;
   window = glfwCreateWindow(width, height, "Earth Simulator", NULL, NULL);
   if (!window) {
     std::cout << "[x] failed to create window." << std::endl;
@@ -33,8 +37,12 @@ int main(...) {
     exit(EXIT_FAILURE);
   }
 
+  glfwSetWindowSizeLimits(window, 600, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
   glfwSetKeyCallback(window, key_callback);
   glfwSetScrollCallback(window, scroll_callback);
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  glfwSetWindowRefreshCallback(window, window_refresh_callback);
+
   glfwMakeContextCurrent(window);
   gladLoadGL();
   glfwSwapInterval(1);
@@ -45,19 +53,23 @@ int main(...) {
   esim_ctrler->subscribe(esim_engine.get());
   esim_engine->subscribe(esim_ctrler.get());
   esim_ctrler->update_viewport(width, height);
-
   esim_engine->start(
       [&]() {
+        glfwPollEvents();
         if (glfwWindowShouldClose(window)) {
           esim_engine->stop();
         }
       },
-      [&]() { glfwSwapBuffers(window); },
-      [&]() { glfwPollEvents(); });
+      [&]() { glfwSwapBuffers(window); });
 
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
+}
+
+void window_refresh_callback(GLFWwindow *window) {
+  esim_engine->render();
+  glfwSwapBuffers(window);
 }
 
 static void error_callback([[maybe_unused]] int error, const char *msg) {
@@ -67,15 +79,18 @@ static void error_callback([[maybe_unused]] int error, const char *msg) {
 static void scroll_callback([[maybe_unused]] GLFWwindow *window,
                             [[maybe_unused]] double xoffset,
                             [[maybe_unused]] double yoffset) {
-  if (yoffset < 0) {
-    esim_ctrler->zoom_in(-yoffset);
-  } else {
-    esim_ctrler->zoom_out(yoffset);
-  }
+  esim_ctrler->zooming(yoffset);
+}
+
+void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window,
+                               [[maybe_unused]] int width,
+                               [[maybe_unused]] int height) {
+  esim_ctrler->update_viewport(width, height);
 }
 
 static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
+    esim_ctrler->stop();
   }
 }

@@ -3,6 +3,7 @@
 
 #include "scene_message.h"
 #include <camera.h>
+#include <functional>
 #include <utils.h>
 #include <utils/observer.h>
 
@@ -25,26 +26,25 @@ public:
   const camera &camera() const noexcept;
 
   /**
+   * @brief Stop the event thread
+   * 
+   */
+  void stop() noexcept;
+
+  /**
    * @brief Update the viewport size
    * 
    * @param width specifies the width of viewport .
    * @param height specifies the height of viewport.
    */
-  void update_viewport(uint32_t width, uint32_t height) noexcept;
+  void update_viewport(int width, int height) noexcept;
 
   /**
-   * @brief Zoom in the camera
+   * @brief Zooming the camera
    * 
    * @param tick specifies the zoom tick in [1, 9].
    */
-  void zoom_in(double tick) noexcept;
-  
-  /**
-   * @brief Zoom out the camera
-   * 
-   * @param tick specifies the zoom tick in [1, 9].
-   */
-  void zoom_out(double tick) noexcept;
+  void zooming(double tick) noexcept;
 
   /**
    * @brief Construct a new scene controller object

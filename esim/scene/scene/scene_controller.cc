@@ -72,24 +72,20 @@ public:
     }
 
     if (move_angle_offset.x != 0 || move_angle_offset.y != 0) {
-      auto hori_rotate_axis = dvec3{0.f, 0.f, 1.f} * static_cast<double>(move_angle_offset.x);
-      auto vert_rotate_axis = dvec3{0.f,-1.f, 0.f} * static_cast<double>(move_angle_offset.y);
+      dvec4 ps{camera_.ecef(), 0.0f};
+      dvec4 up{camera_.up(), 0.0f}, fwd{normalize(ps)};
+      dvec3 hori_rotate_axis = up * double(move_angle_offset.x);
+      dvec3 vert_rotate_axis = cross(dvec3(fwd), dvec3(up)) * double(move_angle_offset.y);
       auto rotate_axis = normalize(hori_rotate_axis + vert_rotate_axis);
       auto rotate_mat = rotate(dmat4x4{1.0f},
-                               static_cast<double>(radians(0.16f)),
+                               static_cast<double>(radians(0.3f)),
                                rotate_axis);
 
-      dvec4 position{camera_.ecef(), 0.0f};
-      dvec4 up{camera_.up(), 0.0f};
-
-      position = rotate_mat * position;
+      ps = rotate_mat * ps;
       up = rotate_mat * up;
       normalize(up);
 
-      // std::cout << glm::to_string(vec3(degrees(camera_.lla().x), degrees(camera_.lla().y), camera_.lla().z)) << std::endl;
-      // trans::wgs84ecef_to_geo(position, geo);
-      // std::cout << glm::to_string(degrees(geo)) << std::endl << std::endl;
-      camera_.set_camera(position, up);
+      camera_.set_camera(ps, up);
       trigger_event();
     }
 
@@ -110,7 +106,6 @@ public:
       auto up = camera_.up();
 
       trans::wgs84ecef_to_geo(pos, ground);
-      std::cout << ground.z <<std::endl;
       ground.z = 0;
       trans::wgs84geo_to_ecef(ground, ground);
 
@@ -165,7 +160,6 @@ public:
 
         moving();
       }
-      std::this_thread::yield();
     }
   }
 

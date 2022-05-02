@@ -116,7 +116,6 @@ public:
     u_offset_ = uniform("unfm_offset");
     a_pos_ = attribute("attb_pos");
     a_tex_ = attribute("attb_text");
-    std::cout << a_tex_<<std::endl;
   }
 
   /**

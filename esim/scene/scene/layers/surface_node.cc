@@ -1,5 +1,6 @@
 #include "surface_node.h"
 #include "glapi/buffer_object.h"
+#include "glapi/texture.h"
 #include "transform/maptile.h"
 #include "transform/wgs84.h"
 #include <scene/programs/bounding_box_program.h>
@@ -19,18 +20,21 @@ public:
   typedef surface_node_vertex vbo_buffer_type;
   typedef struct {
     double x, y, z;
-    double lat, lon, alt;
+    double tx, ty;
   }                           vertex_type;
 
   template <typename type>
-  inline void push(type &&LLA) noexcept {
+  inline void push(type &&tilemap) noexcept {
     using namespace glm;
     assert(it_ != computing_.end());
-    auto &vtx = *it_++;
     dvec3 temp;
-    temp.x = glm::radians(vtx.lat = LLA.x);
-    temp.y = glm::radians(vtx.lon = LLA.y);
-    temp.z = vtx.alt = LLA.z;
+    auto &vtx = *it_++;
+    vtx.tx = tilemap.x;
+    vtx.ty = tilemap.y;
+    trans::maptile_to_geo(tilemap, temp);
+    temp.y += 180.0; temp.z = 0;
+    temp.x = glm::radians(temp.x);
+    temp.y = glm::radians(temp.y);
     trans::wgs84geo_to_ecef(temp, temp);
     offset_ += temp;
     vtx.x = temp.x;
@@ -64,9 +68,8 @@ public:
       v.x = static_cast<float>(compute_v.x - offset_.x);
       v.y = static_cast<float>(compute_v.y - offset_.y);
       v.z = static_cast<float>(compute_v.z - offset_.z);
-      v.lat = static_cast<float>(compute_v.lat);
-      v.lon = static_cast<float>(compute_v.lon);
-      v.alt = static_cast<float>(compute_v.alt);
+      v.tx = static_cast<float>(compute_v.tx);
+      v.ty = static_cast<float>(compute_v.ty);
     }
 
     return res;
@@ -140,11 +143,7 @@ public:
 
     for (size_t i=0; i<=vd; ++i) {
       for (size_t j=0; j<=vd; ++j) {
-        dvec3 pos{xtile + tile_stride * j, ytile + tile_stride * i, zoom};
-        trans::maptile_to_geo(pos, pos);
-        pos.y += 180.0;
-        pos.z = 0; /// altitude
-        vertex_helper.push(std::move(pos));
+        vertex_helper.push(dvec3{xtile + tile_stride * j, ytile + tile_stride * i, zoom});
       }
     }
 
@@ -162,6 +161,8 @@ public:
     auto program = surface_program::get();
     vbo_.bind();
     program->enable_position_pointer();
+    program->enable_texture_coord_pointer();
+    basemap_.bind();
     program->bind_model_uniform(m);
     program->bind_offset_uniform(vec3{0.5f});
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
@@ -197,6 +198,8 @@ public:
 
   impl(maptile &&tile) noexcept
       : node_details{tile}, offset_{0.f} {
+    basemap_.generate();
+    basemap_.bind_from_file("img/test_base000.jpg");
   }
 
 private:
@@ -209,6 +212,7 @@ private:
   glm::dvec3                             offset_;
   gl::vertex_buffer<vertex_type>         vbo_;
   gl::vertex_buffer<bouding_vertex_type> box_vbo_;
+  gl::texture                            basemap_;
 };
 
 void surface_node::draw(const camera &cmr, size_t indices_count) noexcept {

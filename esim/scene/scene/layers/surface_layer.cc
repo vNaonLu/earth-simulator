@@ -62,7 +62,7 @@ public:
     program->bind_proj_uniform(cmr.projection());
     for (auto &node : drawings) {
       node->draw(cmr, ibo_.size());
-      node->draw_grid(cmr, ibo_.size(0));
+      // node->draw_grid(cmr, ibo_.size(0));
     }
   }
   

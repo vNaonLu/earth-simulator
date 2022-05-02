@@ -10,4 +10,5 @@ target_link_libraries(
   ${PROJECT_NAME}_utils
   INTERFACE ${PROJECT_NAME}::trans
             vendor::glad
-            vendor::glfw)
+            vendor::glfw
+            vendor::stb)

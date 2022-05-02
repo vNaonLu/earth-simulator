@@ -1,4 +1,4 @@
-foreach(MODULE glad glfw glm)
+foreach(MODULE glad glfw glm stb)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})

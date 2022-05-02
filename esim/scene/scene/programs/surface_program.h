@@ -19,7 +19,7 @@ namespace scene {
  */
 struct surface_node_vertex {
   float x, y, z;
-  float lat, lon, alt;
+  float tx, ty;
 };
 
 class surface_program final : public gl::program {
@@ -79,6 +79,18 @@ public:
                           GL_FLOAT, GL_FALSE,
                           sizeof(surface_node_vertex), (void *)0);
   }
+  
+  /**
+   * @brief Enable texCoord vertex array and bind pointer with
+   * current bound VBO
+   *
+   */
+  inline void enable_texture_coord_pointer() const noexcept {
+    glEnableVertexAttribArray(a_tex_);
+    glVertexAttribPointer(a_tex_, 2,
+                          GL_FLOAT, GL_FALSE,
+                          sizeof(surface_node_vertex), (void *)(sizeof(float) * 3));
+  }
 
   /**
    * @brief Construct a new surface program object
@@ -103,6 +115,8 @@ public:
     u_proj_ = uniform("unfm_proj");
     u_offset_ = uniform("unfm_offset");
     a_pos_ = attribute("attb_pos");
+    a_tex_ = attribute("attb_text");
+    std::cout << a_tex_<<std::endl;
   }
 
   /**
@@ -145,7 +159,7 @@ private:
   gl::shader vert_,
              frag_;
   GLint      u_model_, u_view_, u_proj_, u_offset_;
-  GLint      a_pos_;
+  GLint      a_pos_, a_tex_;
   gl_error_callback error_msg_;
 };
 

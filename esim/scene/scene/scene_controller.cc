@@ -2,6 +2,7 @@
 #include "transform/wgs84.h"
 #include "utils/fifo.h"
 #include "utils/keys.h"
+#include <atomic>
 #include <functional>
 #include <glfw/glfw3.h>
 #include <thread>
@@ -44,8 +45,13 @@ public:
     return camera_;
   }
 
-  inline void trigger_event() const noexcept {
+  inline void receive_response() noexcept {
+    triggered_.store(false, std::memory_order_release);
+  }
+
+  inline void trigger_event() noexcept {
     update_callback_(make_ptr_u<scene_message>(camera_));
+    triggered_.store(true, std::memory_order_release);
   }
 
   inline void moving() noexcept {
@@ -66,27 +72,26 @@ public:
     }
 
     if (move_angle_offset.x != 0 || move_angle_offset.y != 0) {
-      auto rotate_axis = normalize(dvec3{move_angle_offset.y != 0 ? -1.f : 0.0f,
-                                         0.0f,
-                                         move_angle_offset.x != 0 ? 1.f : 0.0f});
+      auto hori_rotate_axis = dvec3{0.f, 0.f, 1.f} * static_cast<double>(move_angle_offset.x);
+      auto vert_rotate_axis = dvec3{0.f,-1.f, 0.f} * static_cast<double>(move_angle_offset.y);
+      auto rotate_axis = normalize(hori_rotate_axis + vert_rotate_axis);
       auto rotate_mat = rotate(dmat4x4{1.0f},
-                               static_cast<double>(radians(0.1f)),
+                               static_cast<double>(radians(0.16f)),
                                rotate_axis);
 
       dvec4 position{camera_.ecef(), 0.0f};
       dvec4 up{camera_.up(), 0.0f};
+      dvec3 geo;
 
-      std::cout << glm::to_string(position) << std::endl;
       position = rotate_mat * position;
       up = rotate_mat * up;
       normalize(up);
 
-      // std::cout << glm::to_string(position) << std::endl;
-      // trans::wgs84ecef_to_geo(position, position);
-      // std::cout << glm::to_string(position) << std::endl;
-      // camera_.set_camera(vec3{degrees(position.x), degrees(position.y), degrees(position.z)}, vec3{up.x, up.y, up.z});
-      // std::cout << glm::to_string(position) << std::endl << std::endl;
-      // trigger_event();
+      // std::cout << glm::to_string(vec3(degrees(camera_.lla().x), degrees(camera_.lla().y), camera_.lla().z)) << std::endl;
+      trans::wgs84ecef_to_geo(position, geo);
+      // std::cout << glm::to_string(degrees(geo)) << std::endl << std::endl;
+      camera_.set_camera(vec3{geo.x, geo.y, geo.z}, vec3{up.x, up.y, up.z});
+      trigger_event();
     }
 
   }
@@ -143,28 +148,30 @@ public:
   inline void event_main() noexcept {
     while(true) {
       static details::motion_event event;
-      if (event_queue_.try_pop(event)) {
-        if (!perform_motion(event)){
+      if (false == triggered_.load(std::memory_order_acquire)) {
+        if (event_queue_.try_pop(event)) {
+          if (!perform_motion(event)) {
 
-          break;
+            break;
+          }
         }
 
-      } else {
-        std::this_thread::yield();
+        moving();
       }
-
-      moving();
+      std::this_thread::yield();
     }
   }
 
   inline void push_event(details::motion_event &&msg) noexcept {
     event_queue_.push(std::move(msg));
+    triggered_.store(true, std::memory_order_release);
   }
 
   impl(std::function<void(u_ptr<scene_message> &&)> cb) noexcept
       : event_queue_{512},
         camera_{0, 0, glm::vec3{0.f, 0.f, 8000000.f}, glm::vec3{0.f, 0.f, 1.f}},
-        update_callback_{cb}{
+        update_callback_{cb},
+        triggered_{false} {
     auto event_pool = std::thread([&](){
       event_main();
     });
@@ -176,7 +183,7 @@ private:
   class camera camera_;
   std::function<void(u_ptr<scene_message>&&)> update_callback_;
   std::unordered_set<int> key_pressed_;
-  
+  std::atomic<bool> triggered_;
 };
 
 const class camera &scene_controller::camera() const noexcept {
@@ -233,6 +240,7 @@ scene_controller::~scene_controller() noexcept {}
 void scene_controller::update(u_ptr<scene_message> &&msg) noexcept {
   assert(nullptr != pimpl_);
 
+  pimpl_->receive_response();
   if (msg->camera != pimpl_->camera()) {
     notify(make_ptr_u<scene_message>(pimpl_->camera()));
   }

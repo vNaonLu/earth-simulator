@@ -158,7 +158,6 @@ public:
   inline void draw([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
     auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
-    m = rotate(m, (float)(glfwGetTime()), vec3{0.f, 1.f, 1.f});
 
     auto program = surface_program::get();
     vbo_.bind();
@@ -171,8 +170,6 @@ public:
   inline void draw_grid([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
     auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
-    m = rotate(m, (float)(glfwGetTime()), vec3{0.f, 1.f, 1.f});
-    // auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
 
     auto program = surface_program::get();
     vbo_.bind();
@@ -187,14 +184,11 @@ public:
   inline void draw_bounding_box([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
     auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
-    m = rotate(m, (float)(glfwGetTime()), vec3{0.f, 1.f, 1.f});
-    // auto m = translate(mat4x4{1.0f}, static_cast<vec3>(cmr.ecef() - offset_));
     
     auto program = bounding_box_program::get();
     box_vbo_.bind();
     program->enable_position_pointer();
     program->bind_model_uniform(m);
-    program->enable_position_pointer();
     program->bind_color_uniform(vec4{0.0f, 1.0f, 0.0f, 0.6f});
     glPointSize(10);
     glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(box_vbo_.size()));

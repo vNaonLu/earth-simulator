@@ -2,6 +2,7 @@
 #define __ESIM_UTILS_UTILS_OBSERVER_H_
 
 #include "utils.h"
+#include <thread>
 #include <unordered_set>
 
 namespace esim {
@@ -50,6 +51,7 @@ protected:
   inline void notify(message_type &&msg) noexcept {
     if (nullptr != subscriber_) {
       subscriber_->update(std::move(msg));
+      std::this_thread::yield();
     }
   }
   

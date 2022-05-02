@@ -67,8 +67,6 @@ public:
   ~impl() = default;
 
   inline void push_event(u_ptr<scene_message> msg) noexcept {
-    /// TODO: stall
-    // msg_queue_.push(std::move(msg));
     msg_queue_.try_push(std::move(msg));
   }
 
@@ -77,7 +75,6 @@ public:
     if (msg_queue_.try_pop(msg)) {
       if (camera_ != msg->camera) {
         camera_ = std::move(msg->camera);
-    // std::cout << "poll " << glm::to_string(camera_.lla()) << std::endl;
         resume_render();
       }
     } else {

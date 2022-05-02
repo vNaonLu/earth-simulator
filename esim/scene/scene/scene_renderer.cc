@@ -1,4 +1,5 @@
 #include "scene_renderer.h"
+#include "layers/debug_layer.h"
 #include "layers/surface_layer.h"
 #include <glad/glad.h>
 
@@ -25,14 +26,17 @@ public:
     glFrontFace(GL_CCW);
 
     surface_layer_->draw(cmr);
+    debuger_layer_->draw(cmr);
     // surface_layer_->draw_bounding_box(cmr);
   }
 
   impl() noexcept
-      : surface_layer_{make_ptr_u<surface_layer>(15)} {}
+      : surface_layer_{make_ptr_u<surface_layer>(15)},
+        debuger_layer_{make_ptr_u<debug_layer>()} {}
 
 private:
   u_ptr<surface_layer> surface_layer_;
+  u_ptr<debug_layer> debuger_layer_;
 };
 
 void scene_renderer::render(const camera &cmr) noexcept {

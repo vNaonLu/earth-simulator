@@ -67,17 +67,18 @@ public:
   ~impl() = default;
 
   inline void push_event(u_ptr<scene_message> msg) noexcept {
+    resume_render();
     msg_queue_.try_push(std::move(msg));
   }
 
   inline void poll_events() noexcept {
     u_ptr<scene_message> msg;
-    if (msg_queue_.try_pop(msg)) {
-      if (camera_ != msg->camera) {
-        camera_ = std::move(msg->camera);
-        resume_render();
-      }
+    while (msg_queue_.try_pop(msg));
+    if (msg && camera_ != msg->camera) {
+      camera_ = std::move(msg->camera);
+      resume_render();
     } else {
+      /// FIX: fix it
       // pause_render();
     }
   }

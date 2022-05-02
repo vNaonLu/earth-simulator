@@ -3,3 +3,7 @@ BDIR=.build
 cmake -S . -B $BDIR --log-level=VERBOSE
 
 cmake --build $BDIR
+
+$BDIR/debug/esim_test.exe
+
+cp -r esim/assets/* $BDIR/debug/

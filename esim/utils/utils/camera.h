@@ -50,16 +50,6 @@ public:
 
     return ecef_;
   }
-
-  /**
-   * @brief Obtain the camera position in LLA coordinate
-   * 
-   * @return lat-lon-alt position
-   */
-  inline glm::vec3 lla() const noexcept {
-
-    return lla_;
-  }
   
   /**
    * @brief Obtain up vector of camera
@@ -74,15 +64,13 @@ public:
   /**
    * @brief Set the camera position and up-vector
    * 
-   * @param lla specifies the radian LLA position.
+   * @param pos specifies the ECEF position.
    * @param up specifies the oriented vector. 
    */
-  inline void set_camera(const glm::vec3 &lla, const glm::vec3 &up) noexcept {
+  inline void set_camera(const glm::dvec3 &pos, const glm::vec3 &up) noexcept {
     using namespace glm;
-    lla_ = lla;
     up_ = normalize(up);
-    ecef_ = static_cast<dvec3>(lla);
-    trans::wgs84geo_to_ecef(ecef_, ecef_);
+    ecef_ = pos;
   }
 
   /**
@@ -102,23 +90,19 @@ public:
    *
    * @param width specifies the width of viewport.
    * @param height specifies the height of viewport.
-   * @param lla_pos specifies the position in degrees latitude, longitude and altitude.
+   * @param pos specifies the ECEF position.
    * @param up_vec specifies the up vector of camera.
    */
   camera(int width, int height,
-         const glm::vec3 &lla_pos,
+         const glm::dvec3 &pos,
          const glm::vec3 &up_vec) noexcept
       : viewport_{width, height},
-        lla_{lla_pos},
         up_{up_vec},
-        ecef_{static_cast<glm::dvec3>(lla_)} {
-    trans::wgs84geo_to_ecef(ecef_, ecef_);
-  }
+        ecef_{static_cast<glm::dvec3>(pos)} {}
 
   inline bool operator==(const camera &rhs) const noexcept {
     using namespace glm;
     return all(equal(viewport_, rhs.viewport_)) &&
-           all(equal(lla_, rhs.lla_)) &&
            all(equal(ecef_, rhs.ecef_)) &&
            all(equal(up_, rhs.up_));
   }
@@ -130,7 +114,6 @@ public:
 
 private:
   glm::ivec2 viewport_;
-  glm::vec3  lla_;
   glm::vec3  up_;
   glm::dvec3 ecef_;
 };

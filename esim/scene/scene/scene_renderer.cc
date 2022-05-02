@@ -19,7 +19,6 @@ public:
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
     glDepthFunc(GL_ALWAYS);
     
     glEnable(GL_CULL_FACE);
@@ -31,7 +30,7 @@ public:
   }
 
   impl() noexcept
-      : surface_layer_{make_ptr_u<surface_layer>(15)},
+      : surface_layer_{make_ptr_u<surface_layer>(33)},
         debuger_layer_{make_ptr_u<debug_layer>()} {}
 
 private:

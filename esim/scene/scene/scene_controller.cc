@@ -81,16 +81,15 @@ public:
 
       dvec4 position{camera_.ecef(), 0.0f};
       dvec4 up{camera_.up(), 0.0f};
-      dvec3 geo;
 
       position = rotate_mat * position;
       up = rotate_mat * up;
       normalize(up);
 
       // std::cout << glm::to_string(vec3(degrees(camera_.lla().x), degrees(camera_.lla().y), camera_.lla().z)) << std::endl;
-      trans::wgs84ecef_to_geo(position, geo);
+      // trans::wgs84ecef_to_geo(position, geo);
       // std::cout << glm::to_string(degrees(geo)) << std::endl << std::endl;
-      camera_.set_camera(vec3{geo.x, geo.y, geo.z}, vec3{up.x, up.y, up.z});
+      camera_.set_camera(position, up);
       trigger_event();
     }
 
@@ -106,10 +105,16 @@ public:
 
   inline void motion_zoom(double offset) noexcept {
     if (offset != 0) {
-      auto pos = camera_.lla();
+      auto pos = camera_.ecef(),
+           ground = pos;
       auto up = camera_.up();
 
-      pos.z += static_cast<float>(pos.z * offset / 10.f);
+      trans::wgs84ecef_to_geo(pos, ground);
+      std::cout << ground.z <<std::endl;
+      ground.z = 0;
+      trans::wgs84geo_to_ecef(ground, ground);
+
+      pos += (ground - pos) / 10.0 * offset;
       camera_.set_camera(pos, up);
       trigger_event();
     }
@@ -129,9 +134,11 @@ public:
     case motion_type::quit:
       return false;
     case motion_type::scroll:
+      reset();
       motion_zoom(msg.value);
       break;
     case motion_type::viewport:
+      reset();
       motion_viewport(msg.x, msg.y);
       break;
     case motion_type::key_press:
@@ -167,11 +174,16 @@ public:
     triggered_.store(true, std::memory_order_release);
   }
 
+  inline void reset() noexcept {
+    key_pressed_.clear();
+  }
+
   impl(std::function<void(u_ptr<scene_message> &&)> cb) noexcept
       : event_queue_{512},
-        camera_{0, 0, glm::vec3{0.f, 0.f, 8000000.f}, glm::vec3{0.f, 0.f, 1.f}},
+        camera_{0, 0, glm::vec3{8000000.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 1.f}},
         update_callback_{cb},
         triggered_{false} {
+    using namespace glm;
     auto event_pool = std::thread([&](){
       event_main();
     });

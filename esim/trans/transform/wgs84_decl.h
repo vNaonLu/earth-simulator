@@ -26,8 +26,6 @@ inline constexpr static double WGS84_HMIN      = +2.25010182030430273673e-0014; 
 inline constexpr static double WGS84_INVCBRT2  = +7.93700525984099737380e-0001;   /* 1/(2^(1/3)) */
 inline constexpr static double WGS84_INV3      = +3.33333333333333333333e-0001;   /* 1/3 */
 inline constexpr static double WGS84_INV6      = +1.66666666666666666667e-0001;   /* 1/6 */
-inline constexpr static double WGS84_D2R       = +1.74532925199432957691e-0002;   /* pi/180 */
-inline constexpr static double WGS84_R2D       = +5.72957795130823208766e+0001;   /* 180/pi */
 
 } // namespace trans
 

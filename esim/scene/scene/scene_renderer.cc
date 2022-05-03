@@ -19,14 +19,15 @@ public:
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_ALWAYS);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
     
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
     surface_layer_->draw(cmr);
-    // debuger_layer_->draw(cmr);
     // surface_layer_->draw_bounding_box(cmr);
+    // debuger_layer_->draw(cmr);
   }
 
   impl() noexcept

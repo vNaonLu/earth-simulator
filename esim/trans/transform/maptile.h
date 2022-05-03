@@ -20,8 +20,8 @@ namespace trans {
 inline bool maptile_to_geo(const glm::dvec3 &tile, glm::dvec3 &geo) noexcept {
   using namespace glm;
   double LOD = static_cast<double>(1 << static_cast<int>(tile.z));
-	double n = pi<double>() - 2.0 * pi<double>() * tile.y / LOD;
-  geo.y = tile.x / LOD * 360.0 - 180.0;
+	double n = pi<double>() - 2.0 * pi<double>() * tile.x / LOD;
+  geo.y = tile.y / LOD * 360.0 - 180.0;
   geo.x = 180.0 / pi<double>() * atan(0.5 * (exp(n) - exp(-n)));
   return true;
 }

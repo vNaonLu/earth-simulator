@@ -29,10 +29,10 @@ public:
     assert(it_ != computing_.end());
     dvec3 temp;
     auto &vtx = *it_++;
-    vtx.tx = tilemap.x;
-    vtx.ty = tilemap.y;
+    vtx.ty = tilemap.x;
+    vtx.tx = tilemap.y;
     trans::maptile_to_geo(tilemap, temp);
-    temp.y += 180.0; temp.z = 0;
+    temp.z = 0;
     temp.x = glm::radians(temp.x);
     temp.y = glm::radians(temp.y);
     trans::wgs84geo_to_ecef(temp, temp);
@@ -143,7 +143,7 @@ public:
 
     for (size_t i=0; i<=vd; ++i) {
       for (size_t j=0; j<=vd; ++j) {
-        vertex_helper.push(dvec3{xtile + tile_stride * j, ytile + tile_stride * i, zoom});
+        vertex_helper.push(dvec3{xtile + tile_stride * i, ytile + tile_stride * j, zoom});
       }
     }
 
@@ -156,26 +156,26 @@ public:
 
   inline void draw([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
-    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
+    auto model = cmr.model(offset_);
 
     auto program = surface_program::get();
     vbo_.bind();
     program->enable_position_pointer();
     program->enable_texture_coord_pointer();
     basemap_.bind();
-    program->bind_model_uniform(m);
+    program->bind_model_uniform(model);
     program->bind_offset_uniform(vec3{0.5f});
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   
   inline void draw_grid([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
-    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
+    auto model = cmr.model(offset_);
 
     auto program = surface_program::get();
     vbo_.bind();
     program->enable_position_pointer();
-    program->bind_model_uniform(m);
+    program->bind_model_uniform(model);
     program->bind_offset_uniform(vec3{1.0f, 1.0f, 1.0f});
     glPointSize(10);
     glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(vbo_.size()));
@@ -184,15 +184,19 @@ public:
   
   inline void draw_bounding_box([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
     using namespace glm;
-    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(offset_ - cmr.ecef()));
+    auto model = cmr.model(offset_);
     
     auto program = bounding_box_program::get();
     box_vbo_.bind();
     program->enable_position_pointer();
-    program->bind_model_uniform(m);
+    program->bind_model_uniform(model);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_GREATER);
+    program->bind_color_uniform(vec4{1.0f, 0.0f, 0.0f, 0.6f});
+    glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
+    glDepthFunc(GL_LEQUAL);
     program->bind_color_uniform(vec4{0.0f, 1.0f, 0.0f, 0.6f});
-    glPointSize(10);
-    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(box_vbo_.size()));
     glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
 

@@ -16,8 +16,6 @@ const static double ll       = WGS84_EEEED4;    // l^2 = (e^4)/4
 const static double invcbrt2 = WGS84_INVCBRT2;  // 1/(2^(1/3))
 const static double inv3     = WGS84_INV3;      // 1/3
 const static double inv6     = WGS84_INV6;      // 1/6
-const static double d2r      = WGS84_D2R;       // PI/180
-const static double r2d      = WGS84_R2D;       // 180/PI
 
 bool wgs84geo_to_ecef(const glm::dvec3 &geo, glm::dvec3 &ecef) noexcept {
   using namespace glm;

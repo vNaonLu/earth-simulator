@@ -1,4 +1,5 @@
 #version 330
+precision highp float;
 attribute vec3 attb_pos;
 uniform   mat4 unfm_model;
 uniform   mat4 unfm_view;

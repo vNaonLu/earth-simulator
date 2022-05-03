@@ -54,7 +54,6 @@ public:
 
   inline void render() noexcept {
     assert(nullptr != rderer_);
-    // std::cout << "draw " << glm::to_string(camera_.ecef()) << std::endl;
     rderer_->render(camera_);
   }
 
@@ -62,7 +61,7 @@ public:
       : msg_queue_{512},
         state_{to_raw(render_state::normal)},
         rderer_{make_ptr_u<scene_renderer>()},
-        camera_{0, 0, glm::vec3{0.f, 0.0f, 0.0f}, glm::vec3{0.f, 0.f, 1.f}} {}
+        camera_{} {}
 
   ~impl() = default;
 

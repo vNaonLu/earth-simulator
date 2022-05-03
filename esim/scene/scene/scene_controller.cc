@@ -72,20 +72,18 @@ public:
     }
 
     if (move_angle_offset.x != 0 || move_angle_offset.y != 0) {
-      dvec4 ps{camera_.ecef(), 0.0f};
-      dvec4 up{camera_.up(), 0.0f}, fwd{normalize(ps)};
+      auto [pos, dir, up] = camera_.information();
+
       dvec3 hori_rotate_axis = up * double(move_angle_offset.x);
-      dvec3 vert_rotate_axis = cross(dvec3(fwd), dvec3(up)) * double(move_angle_offset.y);
-      auto rotate_axis = normalize(hori_rotate_axis + vert_rotate_axis);
-      auto rotate_mat = rotate(dmat4x4{1.0f},
-                               static_cast<double>(radians(0.3f)),
-                               rotate_axis);
+      dvec3 vert_rotate_axis = cross(up, dir) * double(move_angle_offset.y);
+      dvec3 rotate_axis = hori_rotate_axis + vert_rotate_axis;
+      dmat4x4 rotate_mat = rotate(dmat4x4{1.0f}, static_cast<double>(radians(0.3f)), normalize(rotate_axis));
 
-      ps = rotate_mat * ps;
-      up = rotate_mat * up;
-      normalize(up);
+      pos = rotate_mat * dvec4{pos, 1.0f};
+      dir = rotate_mat * dvec4{dir, 0.0f};
+      up = rotate_mat * dvec4{up, 0.0f};
 
-      camera_.set_camera(ps, up);
+      camera_.set_camera(pos, dir, up);
       trigger_event();
     }
 
@@ -101,16 +99,14 @@ public:
 
   inline void motion_zoom(double offset) noexcept {
     if (offset != 0) {
-      auto pos = camera_.ecef(),
-           ground = pos;
-      auto up = camera_.up();
-
+      auto [pos, dir, up] = camera_.information();
+      glm::dvec3 ground;
       trans::wgs84ecef_to_geo(pos, ground);
       ground.z = 0;
       trans::wgs84geo_to_ecef(ground, ground);
 
       pos += (ground - pos) / 10.0 * offset;
-      camera_.set_camera(pos, up);
+      camera_.set_camera(pos, dir, up);
       trigger_event();
     }
   }
@@ -174,7 +170,7 @@ public:
 
   impl(std::function<void(u_ptr<scene_message> &&)> cb) noexcept
       : event_queue_{512},
-        camera_{0, 0, glm::vec3{8000000.f, 0.f, 0.f}, glm::vec3{0.f, 0.f, 1.f}},
+        camera_{},
         update_callback_{cb},
         triggered_{false} {
     using namespace glm;

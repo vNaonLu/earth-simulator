@@ -1,4 +1,5 @@
 #version 330
+precision highp float;
 uniform vec3 unfm_offset;
 varying vec2 vary_tex_coord;
 uniform sampler2D basemap;

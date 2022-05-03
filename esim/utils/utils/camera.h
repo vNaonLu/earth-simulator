@@ -21,7 +21,9 @@ public:
     using namespace glm;
     const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
     
-    return perspective(radians(45.f), aspect, 11657.070963025086f, 116570709.63025086f);
+    // return perspective(radians(45.f), aspect, 11657.070963025086f, 116570709.63025086f);
+    return perspective(radians(45.f), aspect,
+                       static_cast<float>(near_far_.x), static_cast<float>(near_far_.y));
   }
   
   /**
@@ -116,6 +118,7 @@ public:
         /// to make sure there is 90 degrees between dir and up
         up_ = normalize(up_ - dir_ * dotprod);
       }
+      calculate_near_far();
     } else {
       assert(false);
       reset_information();
@@ -142,6 +145,7 @@ public:
     up_ = dvec3{0.0f, 0.0f, 1.0f};
     dir_ = dvec3{-1.0f, 0.0f, 0.0f};
     ecef_ = dvec3{trans::WGS84_A * 3.0, 0.0f, 0.0f};
+    calculate_near_far();
   }
 
   /**
@@ -149,13 +153,17 @@ public:
    * 
    */
   camera() noexcept : viewport_{800, 600},
+                      near_far_{0.0f, 0.0f},
                       up_{0.0f, 0.0f, 1.0f},
                       dir_{-1.0f, 0.0f, 0.0f},
-                      ecef_{trans::WGS84_A * 3.0, 0.0f, 0.0f} {}
+                      ecef_{trans::WGS84_A * 3.0, 0.0f, 0.0f} {
+    calculate_near_far();
+  }
 
   inline bool operator==(const camera &rhs) const noexcept {
     using namespace glm;
     return all(equal(viewport_, rhs.viewport_)) &&
+           all(equal(near_far_, rhs.near_far_)) &&
            all(equal(ecef_, rhs.ecef_)) &&
            all(equal(dir_, rhs.dir_)) &&
            all(equal(up_, rhs.up_));
@@ -167,7 +175,60 @@ public:
   }
 
 private:
+  inline double height() const noexcept {
+    using namespace glm;
+    dvec3 geo = ecef_;
+    trans::wgs84ecef_to_geo(geo, geo);
+
+    return geo.z;
+  }
+
+  inline void calculate_near_far() noexcept {
+    using namespace glm;
+    constexpr static double scalar = 1e4;
+    double near, far, alt = height();
+    near = ecef_.length();
+    if (near > 1.1 * trans::WGS84_A) {
+      far = 2 * sqrt(near * near - trans::WGS84_A * trans::WGS84_A) + scalar;
+    } else {
+      far = trans::WGS84_A * scalar;
+    }
+    near = far / scalar;
+    if (near > alt / 50.0) {
+      near = alt / 50.f;
+      far = near * scalar;
+    }
+
+    if (far < 0.1f) {
+      near = 0.1f;
+      far = near * scalar;
+    }
+
+    if (near_far_.y > 0.f) {
+      double curr_far = near_far_.y / 2.0;
+      double sc = 1.0;
+      if (far > curr_far) {
+        if (near_far_.y + curr_far < far) {
+          sc = (near_far_.y + curr_far) / far;
+          far = near_far_.y + curr_far;
+        }
+      } else if (far > near_far_.y && near_far_.y - curr_far > far) {
+        sc = (near_far_.y - curr_far) / far;
+        far = near_far_.y - curr_far;
+      }
+
+      if (sc != 1.0) {
+        near *= sc;
+      }
+    }
+
+    near_far_.x = near;
+    near_far_.y = far;
+  }
+
+private:
   glm::ivec2 viewport_;
+  glm::dvec2 near_far_;
   glm::dvec3 up_;
   glm::dvec3 dir_;
   glm::dvec3 ecef_;

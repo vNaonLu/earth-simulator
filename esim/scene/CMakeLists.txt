@@ -4,6 +4,7 @@ add_library(
          ${CMAKE_CURRENT_SOURCE_DIR}/scene/scene_controller.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/scene/scene_renderer.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/scene/layers/debug_layer.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/scene/layers/solar.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/scene/layers/surface_layer.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/scene/layers/surface_node.cc)
 

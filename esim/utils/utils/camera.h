@@ -160,6 +160,17 @@ public:
     calculate_near_far();
   }
 
+  /**
+   * @brief Copy a new camera object
+   * 
+   */
+  camera(const camera &cmr) noexcept : viewport_{cmr.viewport_},
+                                       near_far_{cmr.near_far_},
+                                       up_{cmr.up_},
+                                       dir_{cmr.dir_},
+                                       ecef_{cmr.ecef_} {
+  }
+
   inline bool operator==(const camera &rhs) const noexcept {
     using namespace glm;
     return all(equal(viewport_, rhs.viewport_)) &&
@@ -172,6 +183,15 @@ public:
   inline bool operator!=(const camera &rhs) const noexcept {
 
     return !(operator==(rhs));
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const camera & cmr) noexcept {
+    os << "position " << glm::to_string(cmr.ecef_) << std::endl;
+    os << "     dir " << glm::to_string(cmr.dir_) << std::endl;
+    os << "      up " << glm::to_string(cmr.up_) << std::endl;
+    os << "near far " << glm::to_string(cmr.near_far_) << std::endl;
+    os << "viewport " << glm::to_string(cmr.viewport_) << std::endl;
+    return os;
   }
 
 private:

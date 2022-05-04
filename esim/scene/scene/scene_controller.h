@@ -16,7 +16,7 @@ namespace scene {
  * camera position from mouse or keyboard input.
  *
  */
-class scene_controller : public utils::observer<u_ptr<scene_message>> {
+class scene_controller : public utils::observer<scene_controller> {
 public:
   /**
    * @brief Obtain the scene camera
@@ -73,11 +73,12 @@ public:
   ~scene_controller() noexcept;
 
 protected:
-  void update(u_ptr<scene_message> &&msg) noexcept final;
+  void on_receive(r_ptr<void>) noexcept;
 
 private:
   class impl;
   u_ptr<impl> pimpl_;
+  friend class utils::observer_attorney<scene_controller>;
 };
 
 } // namespace scene

@@ -65,16 +65,16 @@ public:
 
   ~impl() = default;
 
-  inline void push_event(u_ptr<scene_message> msg) noexcept {
+  inline void push_event(r_ptr<scene_message> msg) noexcept {
     resume_render();
-    msg_queue_.try_push(std::move(msg));
+    msg_queue_.try_push(*msg);
   }
 
   inline void poll_events() noexcept {
-    u_ptr<scene_message> msg;
+    scene_message msg{camera_};
     while (msg_queue_.try_pop(msg));
-    if (msg && camera_ != msg->camera) {
-      camera_ = std::move(msg->camera);
+    if (camera_ != msg.camera) {
+      camera_ = std::move(msg.camera);
       resume_render();
     } else {
       /// FIX: fix it
@@ -83,10 +83,10 @@ public:
   }
 
 private:
-  utils::fifo<u_ptr<scene_message>> msg_queue_;
-  std::atomic<raw<render_state>>    state_;
-  u_ptr<scene_renderer>             rderer_;
-  class camera                      camera_;
+  utils::fifo<scene_message>     msg_queue_;
+  std::atomic<raw<render_state>> state_;
+  u_ptr<scene_renderer>          rderer_;
+  class camera                   camera_;
 };
 
 void scene_engine::start(std::function<void()> before_rd,
@@ -98,7 +98,9 @@ void scene_engine::start(std::function<void()> before_rd,
     if (!pimpl_->is_pause()) {
       pimpl_->render();
       /// notify observer the last camera position
-      notify(make_ptr_u<scene_message>(pimpl_->camera()));
+      auto msg = make_ptr_u<scene_message>();
+      msg->camera = pimpl_->camera();
+      notify(msg.get());
       after_rd();
     }
   }
@@ -109,7 +111,9 @@ void scene_engine::render() noexcept {
   pimpl_->poll_events();
   pimpl_->render();
   /// notify observer the last camera position
-  notify(make_ptr_u<scene_message>(pimpl_->camera()));
+  auto msg = make_ptr_u<scene_message>();
+  msg->camera = pimpl_->camera();
+  notify(msg.get());
 }
 
 void scene_engine::pause() noexcept {
@@ -132,9 +136,10 @@ scene_engine::scene_engine() noexcept
 
 scene_engine::~scene_engine() noexcept {}
 
-void scene_engine::update(u_ptr<scene_message> &&msg) noexcept {
+void scene_engine::on_receive(r_ptr<void> raw) noexcept {
   assert(nullptr != pimpl_);
-  pimpl_->push_event(std::move(msg));
+  auto msg = reinterpret_cast<r_ptr<scene_message>>(raw);
+  pimpl_->push_event(msg);
 }
 
 } // namespace scene

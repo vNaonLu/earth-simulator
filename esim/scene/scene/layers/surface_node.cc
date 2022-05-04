@@ -190,12 +190,10 @@ public:
     box_vbo_.bind();
     program->enable_position_pointer();
     program->bind_model_uniform(model);
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
     glDepthFunc(GL_GREATER);
     program->bind_color_uniform(vec4{1.0f, 0.0f, 0.0f, 0.6f});
     glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
-    glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LESS);
     program->bind_color_uniform(vec4{0.0f, 1.0f, 0.0f, 0.6f});
     glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }

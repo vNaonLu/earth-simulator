@@ -25,8 +25,8 @@ public:
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
-    // surface_layer_->draw_bounding_box(cmr);
     surface_layer_->draw(cmr);
+    // surface_layer_->draw_bounding_box(cmr);
     // debuger_layer_->draw(cmr);
   }
 

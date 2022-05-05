@@ -157,11 +157,9 @@ public:
     auto &sun = info.sun;
     auto &cmr = info.camera;
     auto model = cmr.model(offset_);
-    model = sun.rotate_to_solar_direction_on_equator(model);
     model = rotate(model,
                    static_cast<float>(trans::time::earth_rotation_angle(sun.julian_date())),
                    vec3{0.0f, 0.0f, 1.0f});
-    // model = rotate(model, radians((static_cast<float>(timestamp % 86400) / 3600.0f * 15.0f)), vec3{0.0, 0.0, -1.0});
 
     auto program = surface_program::get();
     vbo_.bind();

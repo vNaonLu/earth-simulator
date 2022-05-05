@@ -4,17 +4,17 @@ namespace trans {
 
 inline glm::dvec3 vector_to_sun(double jd, glm::dvec3 &vec) noexcept {
   using namespace glm;
-  double n, L, g, rg, lambda, beta, R;
+  double n, L, g, rg, longl, lat, R;
   double ep, rl, re;
   n = jd;
   L = 280.460 + 0.9856474 * n;
   g = 357.528 + 0.9856003 * n;
   rg = radians(g);
-  lambda = L + 1.915 * sin(rg) + 0.02 * sin(2 * rg);
-  beta = 0;
+  longl = L + 1.915 * sin(rg) + 0.02 * sin(2 * rg);
+  lat = 0;
   R = 1.00014 - 0.01671 * cos(rg) - 0.00014 * cos(2 * rg);
   ep = 23.439 - 0.0000004 * n;
-  rl = radians(lambda);
+  rl = radians(longl);
   re = radians(ep);
   
   /// Rectangular equatorial coordinaties

@@ -50,7 +50,9 @@ public:
   }
 
   inline void trigger_event() noexcept {
-    update_callback_(make_ptr_u<scene_message>(camera_));
+    auto msg = make_ptr_u<scene_message>();
+    msg->camera = camera_;
+    update_callback_(msg.get());
     triggered_.store(true, std::memory_order_release);
   }
 
@@ -168,7 +170,7 @@ public:
     key_pressed_.clear();
   }
 
-  impl(std::function<void(u_ptr<scene_message> &&)> cb) noexcept
+  impl(std::function<void(r_ptr<scene_message>)> cb) noexcept
       : event_queue_{512},
         camera_{},
         update_callback_{cb},
@@ -183,7 +185,7 @@ public:
 private:
   utils::fifo<details::motion_event> event_queue_;
   class camera camera_;
-  std::function<void(u_ptr<scene_message>&&)> update_callback_;
+  std::function<void(r_ptr<scene_message>)> update_callback_;
   std::unordered_set<int> key_pressed_;
   std::atomic<bool> triggered_;
 };
@@ -233,18 +235,24 @@ void scene_controller::release(int key) noexcept {
 }
 
 scene_controller::scene_controller() noexcept
-    : pimpl_{make_ptr_u<impl>([&](u_ptr<scene_message> &&msg){
-      notify(std::move(msg));
-    })} {}
+    : pimpl_{make_ptr_u<impl>([&](r_ptr<scene_message> msg) {
+                                notify(msg);
+                              })} {}
 
 scene_controller::~scene_controller() noexcept {}
 
-void scene_controller::update(u_ptr<scene_message> &&msg) noexcept {
+void scene_controller::on_receive(r_ptr<void> raw) noexcept {
   assert(nullptr != pimpl_);
+  auto msg = reinterpret_cast<r_ptr<scene_message>>(raw);
 
   pimpl_->receive_response();
+  
   if (msg->camera != pimpl_->camera()) {
-    notify(make_ptr_u<scene_message>(pimpl_->camera()));
+    /// since the draw position not equal to controller position
+    /// update scene again
+    auto resend_msg = make_ptr_u<scene_message>();
+    resend_msg->camera = pimpl_->camera();
+    notify(resend_msg.get());
   }
 }
 

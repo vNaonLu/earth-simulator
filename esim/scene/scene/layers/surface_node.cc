@@ -7,8 +7,6 @@
 #include <scene/programs/surface_program.h>
 #include <vector>
 
-#include <glfw/glfw3.h>
-
 namespace esim {
 
 namespace scene {
@@ -154,9 +152,14 @@ public:
     box_vbo_.bind_buffer_data(vertex_helper.export_bounding_box());
   }
 
-  inline void draw([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
+  inline void draw([[maybe_unused]] const rendering_infos &info, size_t indices_count) noexcept {
     using namespace glm;
+    auto &sun = info.sun;
+    auto &cmr = info.camera;
     auto model = cmr.model(offset_);
+    model = rotate(model,
+                   static_cast<float>(trans::time::earth_rotation_angle(sun.julian_date())),
+                   vec3{0.0f, 0.0f, 1.0f});
 
     auto program = surface_program::get();
     vbo_.bind();
@@ -168,8 +171,9 @@ public:
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   
-  inline void draw_grid([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
+  inline void draw_grid([[maybe_unused]] const rendering_infos &info, size_t indices_count) noexcept {
     using namespace glm;
+    auto &cmr = info.camera;
     auto model = cmr.model(offset_);
 
     auto program = surface_program::get();
@@ -182,8 +186,9 @@ public:
     glDrawElements(GL_LINE_STRIP, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   
-  inline void draw_bounding_box([[maybe_unused]] const camera &cmr, size_t indices_count) noexcept {
+  inline void draw_bounding_box([[maybe_unused]] const rendering_infos &info, size_t indices_count) noexcept {
     using namespace glm;
+    auto &cmr = info.camera;
     auto model = cmr.model(offset_);
     
     auto program = bounding_box_program::get();
@@ -217,21 +222,21 @@ private:
   gl::texture                            basemap_;
 };
 
-void surface_node::draw(const camera &cmr, size_t indices_count) noexcept {
+void surface_node::draw(const rendering_infos &info, size_t indices_count) noexcept {
   if (nullptr != pimpl) {
-    pimpl->draw(cmr, indices_count);
+    pimpl->draw(info, indices_count);
   }
 }
 
-void surface_node::draw_grid(const camera &cmr, size_t indices_count) noexcept {
+void surface_node::draw_grid(const rendering_infos &info, size_t indices_count) noexcept {
   if (nullptr != pimpl) {
-    pimpl->draw_grid(cmr, indices_count);
+    pimpl->draw_grid(info, indices_count);
   }
 }
 
-void surface_node::draw_bounding_box(const camera &cmr, size_t indices_count) noexcept {
+void surface_node::draw_bounding_box(const rendering_infos &info, size_t indices_count) noexcept {
   if (nullptr != pimpl) {
-    pimpl->draw_bounding_box(cmr, indices_count);
+    pimpl->draw_bounding_box(info, indices_count);
   }
 }
 

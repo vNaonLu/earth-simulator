@@ -14,9 +14,6 @@ namespace scene {
  */
 struct scene_message {
   class camera camera;
-
-  scene_message(const class camera &cmr) noexcept
-      : camera{cmr} {}
 };
 
 } // namespace scene

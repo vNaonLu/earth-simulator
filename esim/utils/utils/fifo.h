@@ -166,7 +166,6 @@ public:
   template <typename... types>
   inline bool try_emplace(types &&...ref) noexcept {
     static_assert(std::is_constructible_v<type, types...>);
-    static_assert(std::is_convertible_v<r_type, type>);
     auto index = head();
     if (!data_[index & mask_].active() && cas_head(index)) {
       data_[index & mask_].emplace(std::forward<types>(ref)...);
@@ -184,7 +183,7 @@ public:
    */
   inline bool empty() const noexcept {
 
-    return head(std::memory_order_relaxed) == tail(memory_order_relaxed);
+    return head(std::memory_order_relaxed) == tail(std::memory_order_relaxed);
   }
 
   /**

@@ -15,7 +15,7 @@ namespace scene {
  * rendering space.
  *
  */
-class scene_engine : public utils::observer<u_ptr<scene_message>> {
+class scene_engine : public utils::observer<scene_engine> {
 public:
   /**
    * @brief Render the whole scene endless
@@ -63,11 +63,12 @@ public:
   ~scene_engine() noexcept;
 
 protected:
-  void update(u_ptr<scene_message> &&msg) noexcept final;
+  void on_receive(r_ptr<void>) noexcept;
 
 private:
   class impl;
   u_ptr<impl> pimpl_;
+  friend class utils::observer_attorney<scene_engine>;
 };
 
 } // namespace scene

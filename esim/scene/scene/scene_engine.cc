@@ -1,4 +1,5 @@
 #include "scene_engine.h"
+#include "render/rendering_infos.h"
 #include "scene_controller.h"
 #include "scene_message.h"
 #include "scene_renderer.h"
@@ -21,7 +22,7 @@ public:
   };
 
   inline class camera camera() const noexcept {
-    return camera_;
+    return rendering_infos_.camera;
   }
 
   inline bool is_active() const noexcept {
@@ -54,27 +55,27 @@ public:
 
   inline void render() noexcept {
     assert(nullptr != rderer_);
-    rderer_->render(camera_);
+    rderer_->render(rendering_infos_);
   }
 
   impl() noexcept
       : msg_queue_{512},
         state_{to_raw(render_state::normal)},
         rderer_{make_ptr_u<scene_renderer>()},
-        camera_{} {}
+        rendering_infos_{} {}
 
   ~impl() = default;
 
-  inline void push_event(u_ptr<scene_message> msg) noexcept {
+  inline void push_event(r_ptr<scene_message> msg) noexcept {
     resume_render();
-    msg_queue_.try_push(std::move(msg));
+    msg_queue_.try_push(*msg);
   }
 
   inline void poll_events() noexcept {
-    u_ptr<scene_message> msg;
+    scene_message msg{rendering_infos_.camera};
     while (msg_queue_.try_pop(msg));
-    if (msg && camera_ != msg->camera) {
-      camera_ = std::move(msg->camera);
+    if (rendering_infos_.camera != msg.camera) {
+      rendering_infos_.camera = std::move(msg.camera);
       resume_render();
     } else {
       /// FIX: fix it
@@ -83,10 +84,10 @@ public:
   }
 
 private:
-  utils::fifo<u_ptr<scene_message>> msg_queue_;
-  std::atomic<raw<render_state>>    state_;
-  u_ptr<scene_renderer>             rderer_;
-  class camera                      camera_;
+  utils::fifo<scene_message>     msg_queue_;
+  std::atomic<raw<render_state>> state_;
+  u_ptr<scene_renderer>          rderer_;
+  rendering_infos                rendering_infos_;
 };
 
 void scene_engine::start(std::function<void()> before_rd,
@@ -98,7 +99,9 @@ void scene_engine::start(std::function<void()> before_rd,
     if (!pimpl_->is_pause()) {
       pimpl_->render();
       /// notify observer the last camera position
-      notify(make_ptr_u<scene_message>(pimpl_->camera()));
+      auto msg = make_ptr_u<scene_message>();
+      msg->camera = pimpl_->camera();
+      notify(msg.get());
       after_rd();
     }
   }
@@ -109,7 +112,9 @@ void scene_engine::render() noexcept {
   pimpl_->poll_events();
   pimpl_->render();
   /// notify observer the last camera position
-  notify(make_ptr_u<scene_message>(pimpl_->camera()));
+  auto msg = make_ptr_u<scene_message>();
+  msg->camera = pimpl_->camera();
+  notify(msg.get());
 }
 
 void scene_engine::pause() noexcept {
@@ -132,9 +137,10 @@ scene_engine::scene_engine() noexcept
 
 scene_engine::~scene_engine() noexcept {}
 
-void scene_engine::update(u_ptr<scene_message> &&msg) noexcept {
+void scene_engine::on_receive(r_ptr<void> raw) noexcept {
   assert(nullptr != pimpl_);
-  pimpl_->push_event(std::move(msg));
+  auto msg = reinterpret_cast<r_ptr<scene_message>>(raw);
+  pimpl_->push_event(msg);
 }
 
 } // namespace scene

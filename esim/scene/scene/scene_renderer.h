@@ -1,6 +1,7 @@
 #ifndef __ESIM_SCENE_SCENE_SCENE_RENDERER_H_
 #define __ESIM_SCENE_SCENE_SCENE_RENDERER_H_
 
+#include "render/rendering_infos.h"
 #include "utils/camera.h"
 #include "utils/utils.h"
 
@@ -18,9 +19,9 @@ public:
   /**
    * @brief Render a frame of the scene
    * 
-   * @param cmr specifies the camera information.
+   * @param cmr specifies the rendering information.
    */
-  void render(const camera &cmr) noexcept;
+  void render(const rendering_infos &info) noexcept;
 
   /**
    * @brief Construct a new scene renderer object

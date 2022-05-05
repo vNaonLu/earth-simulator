@@ -13,21 +13,27 @@ class solar::impl {
 public:
   inline std::vector<solar_vertex> gen_solor_vector() noexcept {
     using namespace glm;
-    std::vector<solar_vertex> buffer(1);
+    std::vector<solar_vertex> buffer(2);
     auto it = buffer.begin();
-    double jd = trans::time::unix_to_juliandate(trans::time::current_utctimestamp());
-    dvec3 solor_vec;
-    trans::vector_to_solar(jd, solor_vec);
-    (*it).x = static_cast<float>(solor_vec.x * trans::WGS84_A * 2.0);
-    (*it).y = static_cast<float>(solor_vec.y * trans::WGS84_A * 2.0);
-    (*it).z = static_cast<float>(solor_vec.z * trans::WGS84_A * 2.0);
+    (*it).x = 1.0;
+    (*it).y = 0.0;
+    (*it++).z = 0.0;
+    (*it).x = 0.0;
+    (*it).y = 0.0;
+    (*it).z = 0.0;
     
     return buffer;
   }
   
-  inline void draw([[maybe_unused]] const camera &cmr) noexcept {
+  inline void draw([[maybe_unused]] const rendering_infos &info) noexcept {
     using namespace glm;
-    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(- cmr.ecef()));
+    auto &cmr = info.camera;
+    auto &sun = info.sun;
+    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(- cmr.ecef()));;
+    m = scale(m, vec3{trans::WGS84_A * 3.0, trans::WGS84_A * 3.0, trans::WGS84_A * 3.0});
+    m = sun.rotate_to_solar_direction(m);
+
+    // m = scale(m, vec3{trans::WGS84_A * 3.0, trans::WGS84_A * 3.0, trans::WGS84_A * 3.0});
     
     auto program = solar_program::get();
     program->use();
@@ -39,6 +45,7 @@ public:
     program->bind_color_uniform(vec4{1.0f, 1.0f, 1.0f, 1.0f});
     glPointSize(10.0);
     glDrawArrays(GL_POINTS, 0, 1);
+    glDrawArrays(GL_LINES, 0, 2);
   }
 
   impl() noexcept {
@@ -50,9 +57,9 @@ private:
   gl::vertex_buffer<solar_vertex> vbo_;
 };
 
-void solar::draw(const camera &cmr) noexcept {
+void solar::draw(const rendering_infos &info) noexcept {
   assert(nullptr != pimpl_);
-  pimpl_->draw(cmr);
+  pimpl_->draw(info);
 }
 
 solar::solar() noexcept : pimpl_{make_ptr_u<impl>()} {}

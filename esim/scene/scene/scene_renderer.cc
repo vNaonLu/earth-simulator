@@ -10,7 +10,8 @@ namespace scene {
 
 class scene_renderer::impl {
 public:
-  inline void render(const camera &cmr) noexcept {
+  inline void render(const rendering_infos &info) noexcept {
+    auto &cmr = info.camera;
     auto vp = cmr.viewport();
 
     glViewport(0, 0, vp.x, vp.y);
@@ -26,8 +27,8 @@ public:
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
-    surface_layer_->draw(cmr);
-    solar_->draw(cmr);
+    surface_layer_->draw(info);
+    solar_->draw(info);
     // surface_layer_->draw_bounding_box(cmr);
     // debuger_layer_->draw(cmr);
   }
@@ -43,9 +44,9 @@ private:
   u_ptr<solar> solar_;
 };
 
-void scene_renderer::render(const camera &cmr) noexcept {
+void scene_renderer::render(const rendering_infos &info) noexcept {
   assert(nullptr != pimpl_);
-  pimpl_->render(cmr);
+  pimpl_->render(info);
 }
 
 scene_renderer::scene_renderer() noexcept

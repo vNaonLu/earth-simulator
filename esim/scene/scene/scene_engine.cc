@@ -1,4 +1,5 @@
 #include "scene_engine.h"
+#include "render/rendering_infos.h"
 #include "scene_controller.h"
 #include "scene_message.h"
 #include "scene_renderer.h"
@@ -21,7 +22,7 @@ public:
   };
 
   inline class camera camera() const noexcept {
-    return camera_;
+    return rendering_infos_.camera;
   }
 
   inline bool is_active() const noexcept {
@@ -54,14 +55,14 @@ public:
 
   inline void render() noexcept {
     assert(nullptr != rderer_);
-    rderer_->render(camera_);
+    rderer_->render(rendering_infos_);
   }
 
   impl() noexcept
       : msg_queue_{512},
         state_{to_raw(render_state::normal)},
         rderer_{make_ptr_u<scene_renderer>()},
-        camera_{} {}
+        rendering_infos_{} {}
 
   ~impl() = default;
 
@@ -71,10 +72,10 @@ public:
   }
 
   inline void poll_events() noexcept {
-    scene_message msg{camera_};
+    scene_message msg{rendering_infos_.camera};
     while (msg_queue_.try_pop(msg));
-    if (camera_ != msg.camera) {
-      camera_ = std::move(msg.camera);
+    if (rendering_infos_.camera != msg.camera) {
+      rendering_infos_.camera = std::move(msg.camera);
       resume_render();
     } else {
       /// FIX: fix it
@@ -86,7 +87,7 @@ private:
   utils::fifo<scene_message>     msg_queue_;
   std::atomic<raw<render_state>> state_;
   u_ptr<scene_renderer>          rderer_;
-  class camera                   camera_;
+  rendering_infos                rendering_infos_;
 };
 
 void scene_engine::start(std::function<void()> before_rd,

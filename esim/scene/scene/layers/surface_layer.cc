@@ -53,28 +53,28 @@ public:
     ibo_.bind_buffer_data(std::move(buffer), GL_STATIC_DRAW, 1);
   }
 
-  inline void draw(const camera &cmr) noexcept {
+  inline void draw(const rendering_infos &info) noexcept {
     using namespace glm;
     auto program = surface_program::get();
     ibo_.bind(0);
     program->use();
-    program->bind_view_uniform(cmr.view());
-    program->bind_proj_uniform(cmr.projection());
+    program->bind_view_uniform(info.camera.view());
+    program->bind_proj_uniform(info.camera.projection());
     for (auto &node : drawings) {
-      node->draw(cmr, ibo_.size());
+      node->draw(info, ibo_.size());
       // node->draw_grid(cmr, ibo_.size(0));
     }
   }
   
-  inline void draw_bounding_box(const camera &cmr) noexcept {
+  inline void draw_bounding_box(const rendering_infos &info) noexcept {
     using namespace glm;
     auto program = bounding_box_program::get();
     ibo_.bind(1);
     program->use();
-    program->bind_view_uniform(cmr.view());
-    program->bind_proj_uniform(cmr.projection());
+    program->bind_view_uniform(info.camera.view());
+    program->bind_proj_uniform(info.camera.projection());
     for (auto &node : drawings) {
-      node->draw_bounding_box(cmr, ibo_.size(1));
+      node->draw_bounding_box(info, ibo_.size(1));
     }
   }
 
@@ -101,15 +101,15 @@ private:
   std::vector<u_ptr<surface_node>> drawings;
 };
 
-void surface_layer::draw(const camera &cmr) noexcept {
+void surface_layer::draw(const rendering_infos &info) noexcept {
   if (nullptr != pimpl) {
-    pimpl->draw(cmr);
+    pimpl->draw(info);
   }
 }
 
-void surface_layer::draw_bounding_box(const camera &cmr) noexcept {
+void surface_layer::draw_bounding_box(const rendering_infos &info) noexcept {
   if (nullptr != pimpl) {
-    pimpl->draw_bounding_box(cmr);
+    pimpl->draw_bounding_box(info);
   }
 }
 

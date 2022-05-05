@@ -1,6 +1,7 @@
 #ifndef __ESIM_SCENE_LAYER_SOLAR_H_
 #define __ESIM_SCENE_LAYER_SOLAR_H_
 
+#include "scene/render/rendering_infos.h"
 #include "utils/camera.h"
 #include "utils/utils.h"
 
@@ -13,9 +14,9 @@ public:
   /**
    * @brief Draw the solar
    * 
-   * @param cmr specifies the camera information.
+   * @param info specifies the rendering information.
    */
-  void draw(const camera &cmr) noexcept;
+  void draw(const rendering_infos &info) noexcept;
 
   /**
    * @brief Construct a new solar object

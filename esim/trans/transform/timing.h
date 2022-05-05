@@ -3,6 +3,7 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #define _POSIX_C_SOURCE 200112L
 
+#include "glm/ext/scalar_constants.hpp"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -49,9 +50,26 @@ inline static time_type current_utctimestamp() noexcept {
   return details::timeutc(*std::gmtime(&tm));
 }
 
+/**
+ * @brief Obtain the julian date (J2000.0) from unix time.
+ * 
+ * @param unix_sec specifies the unix timestamp.
+ * @return the julian time.
+ */
 inline static double unix_to_juliandate(time_type unix_sec) noexcept {
+std::cout << (unix_sec / 86400.0f) + 2440587.5 << std::endl;
+  return (unix_sec / 86400.0f) + 2440587.5 - 2451545.0;
+}
 
-  return (unix_sec / 86400.0f) + 2440587.5;
+/**
+ * @brief Obtain the ERA (earth rotation angle) from the julian date.
+ * 
+ * @param jd specifies the target time point.
+ * @return the sidereal hours
+ */
+inline static double earth_rotation_angle(double jd) noexcept {
+  using namespace glm;
+  return 2 * pi<double>() * (0.779'057'273'2640 + 1.002'737'811'911'354'48 * jd);
 }
 
 } // namespace time

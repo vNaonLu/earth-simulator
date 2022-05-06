@@ -23,6 +23,11 @@ inline double sun::julian_date() const noexcept {
   return jd_;
 }
 
+inline glm::dvec3 sun::direction() const noexcept {
+
+  return solar_direction_;
+}
+
 inline sun::sun() noexcept
     : jd_{trans::time::unix_to_juliandate(trans::time::current_utctimestamp())},
       solar_direction_{trans::vector_to_sun(jd_)} {}

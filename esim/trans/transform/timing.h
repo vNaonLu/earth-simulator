@@ -57,7 +57,7 @@ inline static time_type current_utctimestamp() noexcept {
  * @return the julian time.
  */
 inline static double unix_to_juliandate(time_type unix_sec) noexcept {
-std::cout << (unix_sec / 86400.0f) + 2440587.5 << std::endl;
+
   return (unix_sec / 86400.0f) + 2440587.5 - 2451545.0;
 }
 

@@ -17,8 +17,9 @@ class surface_vertex {
 public:
   typedef surface_node_vertex vbo_buffer_type;
   typedef struct {
-    double x, y, z;
-    double tx, ty;
+    glm::dvec3 pos;
+    glm::dvec3 normal;
+    glm::dvec2 texcoord;
   }                           vertex_type;
 
   template <typename type>
@@ -27,30 +28,56 @@ public:
     assert(it_ != computing_.end());
     dvec3 temp;
     auto &vtx = *it_++;
-    vtx.ty = tilemap.x;
-    vtx.tx = tilemap.y;
+    vtx.texcoord.y = tilemap.x;
+    vtx.texcoord.x = tilemap.y;
     trans::maptile_to_geo(tilemap, temp);
     temp.z = 0;
     temp.x = glm::radians(temp.x);
     temp.y = glm::radians(temp.y);
     trans::wgs84geo_to_ecef(temp, temp);
     offset_ += temp;
-    vtx.x = temp.x;
-    vtx.y = temp.y;
-    vtx.z = temp.z;
+    vtx.pos.x = temp.x;
+    vtx.pos.y = temp.y;
+    vtx.pos.z = temp.z;
 
-    max_.x = glm::max(max_.x, vtx.x);
-    max_.y = glm::max(max_.y, vtx.y);
-    max_.z = glm::max(max_.z, vtx.z);
-    min_.x = glm::min(min_.x, vtx.x);
-    min_.y = glm::min(min_.y, vtx.y);
-    min_.z = glm::min(min_.z, vtx.z);
+    max_.x = glm::max(max_.x, vtx.pos.x);
+    max_.y = glm::max(max_.y, vtx.pos.y);
+    max_.z = glm::max(max_.z, vtx.pos.z);
+    min_.x = glm::min(min_.x, vtx.pos.x);
+    min_.y = glm::min(min_.y, vtx.pos.y);
+    min_.z = glm::min(min_.z, vtx.pos.z);
   }
 
   inline void confirm() noexcept {
+    using namespace glm;
     offset_ /= static_cast<double>(vertex_count_);
     max_ -= offset_;
     min_ -= offset_;
+
+    /// calculating normal
+    for (size_t i=1; i<vertex_details_+2; ++i) {
+      for (size_t j=1; j<vertex_details_+2; ++j) {
+        auto &curr = computing_[to_index(i, j)];
+        auto up = computing_[to_index(i, j-1)].pos - curr.pos;
+        auto upleft = computing_[to_index(i-1, j-1)].pos - curr.pos;
+        auto left = computing_[to_index(i-1, j)].pos - curr.pos;
+        auto downleft = computing_[to_index(i-1, j+1)].pos - curr.pos;
+        auto down = computing_[to_index(i, j+1)].pos - curr.pos;
+        auto downright = computing_[to_index(i+1, j+1)].pos - curr.pos;
+        auto right = computing_[to_index(i+1, j)].pos - curr.pos;
+        auto upright = computing_[to_index(i+1, j-1)].pos - curr.pos;
+        curr.normal  = cross(up, upleft);
+        curr.normal += cross(upleft, left);
+        curr.normal += cross(left, downleft);
+        curr.normal += cross(downleft, down);
+        curr.normal += cross(down, downright);
+        curr.normal += cross(downright, right);
+        curr.normal += cross(right, upright);
+        curr.normal += cross(upright, up);
+        curr.normal /= 8.0;
+        curr.normal = normalize(curr.normal);
+      }
+    }
   }
 
   inline glm::dvec3 offset() const noexcept {
@@ -59,15 +86,21 @@ public:
   }
 
   inline std::vector<vbo_buffer_type> export_buffer() const noexcept {
-    std::vector<vbo_buffer_type> res(vertex_count_);
+    std::vector<vbo_buffer_type> res((vertex_details_ + 1) * (vertex_details_ + 1));
     auto v_it = computing_.begin();
-    for (auto &v : res) {
-      auto &compute_v = *v_it++;
-      v.x = static_cast<float>(compute_v.x - offset_.x);
-      v.y = static_cast<float>(compute_v.y - offset_.y);
-      v.z = static_cast<float>(compute_v.z - offset_.z);
-      v.tx = static_cast<float>(compute_v.tx);
-      v.ty = static_cast<float>(compute_v.ty);
+    for (size_t i = 0; i < vertex_details_ + 1; ++i) {
+      for (size_t j = 0; j < vertex_details_ + 1; ++j) {
+        auto &compute_v = computing_[to_index(i+1, j+1)];
+        auto &v = res[to_buffer_index(i, j)];
+        v.x = static_cast<float>(compute_v.pos.x - offset_.x);
+        v.y = static_cast<float>(compute_v.pos.y - offset_.y);
+        v.z = static_cast<float>(compute_v.pos.z - offset_.z);
+        v.nx = static_cast<float>(compute_v.normal.x);
+        v.ny = static_cast<float>(compute_v.normal.y);
+        v.nz = static_cast<float>(compute_v.normal.z);
+        v.tx = static_cast<float>(compute_v.texcoord.x);
+        v.ty = static_cast<float>(compute_v.texcoord.y);
+      }
     }
 
     return res;
@@ -108,7 +141,8 @@ public:
   }
 
   surface_vertex(size_t vd) noexcept
-      : vertex_count_{static_cast<uint32_t>((vd + 1) * (vd + 1))},
+      : vertex_details_{static_cast<uint32_t>(vd)},
+        vertex_count_{static_cast<uint32_t>((vd + 3) * (vd + 3))},
         computing_(vertex_count_),
         max_{std::numeric_limits<double>::min()},
         min_{std::numeric_limits<double>::max()},
@@ -117,6 +151,18 @@ public:
   }
 
 private:
+  inline size_t to_index(size_t i, size_t j) const noexcept {
+
+    return i * (vertex_details_ + 3) + j;
+  }
+
+  inline size_t to_buffer_index(size_t i, size_t j) const noexcept {
+
+    return i * (vertex_details_ + 1) + j;
+  }
+
+private:
+  const uint32_t           vertex_details_;
   const uint32_t           vertex_count_;
   std::vector<vertex_type> computing_;
   glm::dvec3               max_, min_;
@@ -135,12 +181,12 @@ public:
     using namespace glm;
     const double tile_stride = 1.f / static_cast<double>(vd);
     const uint32_t zoom = node_details.zoom;
-    const double xtile = node_details.xtile,
-                 ytile = node_details.ytile;
+    const double xtile = node_details.xtile - tile_stride, /// with previous node to calculate normal verctor
+                 ytile = node_details.ytile - tile_stride;
     details::surface_vertex vertex_helper(vd);
 
-    for (size_t i=0; i<=vd; ++i) {
-      for (size_t j=0; j<=vd; ++j) {
+    for (size_t i=0; i<=vd+2; ++i) {
+      for (size_t j=0; j<=vd+2; ++j) {
         vertex_helper.push(dvec3{xtile + tile_stride * i, ytile + tile_stride * j, zoom});
       }
     }
@@ -164,10 +210,11 @@ public:
     auto program = surface_program::get();
     vbo_.bind();
     program->enable_position_pointer();
+    program->enable_normal_pointer();
     program->enable_texture_coord_pointer();
     basemap_.bind();
     program->bind_model_uniform(model);
-    program->bind_offset_uniform(vec3{0.5f});
+    program->bind_solar_dir_uniform(sun.rotate_to_solar_direction(glm::mat4x4{1.0}));
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   
@@ -180,7 +227,6 @@ public:
     vbo_.bind();
     program->enable_position_pointer();
     program->bind_model_uniform(model);
-    program->bind_offset_uniform(vec3{1.0f, 1.0f, 1.0f});
     glPointSize(10);
     glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(vbo_.size()));
     glDrawElements(GL_LINE_STRIP, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);

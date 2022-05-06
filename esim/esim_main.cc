@@ -46,7 +46,6 @@ int main(...) {
   gladLoadGL();
   glfwSwapInterval(1);
   glfwGetFramebufferSize(window, &width, &height);
-
   esim_engine = esim::make_ptr_u<esim::scene::scene_engine>();
   esim_ctrler = esim::make_ptr_u<esim::scene::scene_controller>();
   esim_ctrler->subscribe(esim_engine.get());
@@ -67,8 +66,10 @@ int main(...) {
 }
 
 void window_refresh_callback(GLFWwindow *window) {
-  esim_engine->render();
-  glfwSwapBuffers(window);
+  if (nullptr != esim_engine) {
+    esim_engine->render();
+    glfwSwapBuffers(window);
+  }
 }
 
 static void error_callback([[maybe_unused]] int error, const char *msg) {

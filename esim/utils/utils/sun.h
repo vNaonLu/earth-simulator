@@ -34,6 +34,13 @@ public:
   double julian_date() const noexcept;
 
   /**
+   * @brief Obtain the solar direction (from origin to sun).
+   * 
+   * @return a 3-doubled vector. 
+   */
+  glm::dvec3 direction() const noexcept;
+
+  /**
    * @brief Construct a new sun object.
    * 
    */

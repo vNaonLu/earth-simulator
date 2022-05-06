@@ -19,6 +19,7 @@ namespace scene {
  */
 struct surface_node_vertex {
   float x, y, z;
+  float nx, ny, nz;
   float tx, ty;
 };
 
@@ -81,6 +82,18 @@ public:
   }
   
   /**
+   * @brief Enable normal vertex array and bind pointer with
+   * current bound VBO
+   *
+   */
+  inline void enable_normal_pointer() const noexcept {
+    glEnableVertexAttribArray(a_normal_);
+    glVertexAttribPointer(a_normal_, 3,
+                          GL_FLOAT, GL_FALSE,
+                          sizeof(surface_node_vertex), (void *)(sizeof(float) * 3));
+  }
+  
+  /**
    * @brief Enable texCoord vertex array and bind pointer with
    * current bound VBO
    *
@@ -89,7 +102,7 @@ public:
     glEnableVertexAttribArray(a_tex_);
     glVertexAttribPointer(a_tex_, 2,
                           GL_FLOAT, GL_FALSE,
-                          sizeof(surface_node_vertex), (void *)(sizeof(float) * 3));
+                          sizeof(surface_node_vertex), (void *)(sizeof(float) * 6));
   }
 
   /**
@@ -105,8 +118,8 @@ public:
         u_model_{-1}, u_offset_{-1}, a_pos_{-1},
         error_msg_{err_cb} {
     std::string vs_text, fs_text;
-    assert(read_file("glsl/surface.vs", vs_text));
-    assert(read_file("glsl/surface.fs", fs_text));
+    assert(read_file("glsl/surface.vert", vs_text));
+    assert(read_file("glsl/surface.frag", fs_text));
     assert(vert_.compile(vs_text));
     assert(frag_.compile(fs_text));
     assert(link_shaders(vert_, frag_));
@@ -115,6 +128,7 @@ public:
     u_proj_ = uniform("unfm_proj");
     u_offset_ = uniform("unfm_offset");
     a_pos_ = attribute("attb_pos");
+    a_normal_ = attribute("attb_normal");
     a_tex_ = attribute("attb_text");
   }
 
@@ -158,7 +172,7 @@ private:
   gl::shader vert_,
              frag_;
   GLint      u_model_, u_view_, u_proj_, u_offset_;
-  GLint      a_pos_, a_tex_;
+  GLint      a_pos_, a_normal_, a_tex_;
   gl_error_callback error_msg_;
 };
 

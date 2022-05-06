@@ -36,7 +36,7 @@ protected:
     glBindBuffer(type, ids_[idx]);
   }
 
-  buffer_base() noexcept : ids_{0} {
+  buffer_base() noexcept : ids_(0) {
   }
 
   ~buffer_base() noexcept {

@@ -40,6 +40,12 @@ struct motion_event {
 
 class scene_controller::impl {
 public:
+  enum class state {
+    working,
+    stop,
+    terminated
+  };
+
   inline const class camera &camera() const noexcept {
 
     return camera_;
@@ -146,7 +152,7 @@ public:
   }
 
   inline void event_main() noexcept {
-    while(true) {
+    while(state::working == service_state_.load(std::memory_order_acquire)) {
       static details::motion_event event;
       if (false == triggered_.load(std::memory_order_acquire)) {
         if (event_queue_.try_pop(event)) {
@@ -159,6 +165,7 @@ public:
         moving();
       }
     }
+    service_state_.store(state::terminated, std::memory_order_release);
   }
 
   inline void push_event(details::motion_event &&msg) noexcept {
@@ -170,8 +177,18 @@ public:
     key_pressed_.clear();
   }
 
+  inline void stop() noexcept {
+    service_state_.store(state::stop, std::memory_order_release);
+  }
+  
+  inline bool is_terminated() noexcept {
+
+    return state::terminated == service_state_.load(std::memory_order_acquire);
+  }
+
   impl(std::function<void(r_ptr<scene_message>)> cb) noexcept
-      : event_queue_{512},
+      : service_state_{state::working},
+        event_queue_{512},
         camera_{},
         update_callback_{cb},
         triggered_{false} {
@@ -183,6 +200,7 @@ public:
   }
 
 private:
+  std::atomic<state> service_state_;
   utils::fifo<details::motion_event> event_queue_;
   class camera camera_;
   std::function<void(r_ptr<scene_message>)> update_callback_;
@@ -239,7 +257,13 @@ scene_controller::scene_controller() noexcept
                                 notify(msg);
                               })} {}
 
-scene_controller::~scene_controller() noexcept {}
+scene_controller::~scene_controller() noexcept {
+  assert(nullptr != pimpl_);
+  pimpl_->stop();
+  while(!pimpl_->is_terminated()) {
+    std::this_thread::yield();
+  }
+}
 
 void scene_controller::on_receive(r_ptr<void> raw) noexcept {
   assert(nullptr != pimpl_);

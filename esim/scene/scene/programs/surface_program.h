@@ -30,9 +30,9 @@ class surface_program final : public gl::program {
 public:
   inline void bind_common_uniform(const rendering_infos& info) const noexcept {
     using namespace glm;
-    constexpr static float kr = 0.0025f;
+    constexpr static float kr = 0.0005f;
     constexpr static float km = 0.0010f;
-    constexpr static float esun = 20.0f;
+    constexpr static float esun = 10.5f;
 
     constexpr static float outer_radius = static_cast<float>(trans::WGS84_A * 1.025);
     constexpr static float inner_radius = static_cast<float>(trans::WGS84_A); 

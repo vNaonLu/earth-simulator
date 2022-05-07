@@ -28,7 +28,7 @@ public:
     using namespace glm;
     constexpr static float kr = 0.0025f;
     constexpr static float km = 0.0010f;
-    constexpr static float esun = 20.0f;
+    constexpr static float esun = 1.0f;
 
     constexpr static float outer_radius = static_cast<float>(trans::WGS84_A * 1.025);
     constexpr static float inner_radius = static_cast<float>(trans::WGS84_A); 

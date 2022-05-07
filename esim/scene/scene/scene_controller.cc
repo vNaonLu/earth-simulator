@@ -85,7 +85,7 @@ public:
       dvec3 hori_rotate_axis = up * double(move_angle_offset.x);
       dvec3 vert_rotate_axis = cross(up, dir) * double(move_angle_offset.y);
       dvec3 rotate_axis = hori_rotate_axis + vert_rotate_axis;
-      dmat4x4 rotate_mat = rotate(dmat4x4{1.0f}, static_cast<double>(radians(0.3f)), normalize(rotate_axis));
+      dmat4x4 rotate_mat = rotate(dmat4x4{1.0f}, static_cast<double>(radians(0.3f * 3)), normalize(rotate_axis));
 
       pos = rotate_mat * dvec4{pos, 1.0f};
       dir = rotate_mat * dvec4{dir, 0.0f};

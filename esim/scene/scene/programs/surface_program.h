@@ -32,6 +32,7 @@ public:
    */
   template <typename type>
   inline void bind_solar_dir_uniform(type &&val) const noexcept {
+    assert(-1 != u_solar_dir_);
     glUniform3fv(u_solar_dir_, 1,
                  glm::value_ptr(std::forward<type>(val)));
   }
@@ -43,6 +44,7 @@ public:
    */
   template <typename type>
   inline void bind_proj_uniform(type &&val) const noexcept {
+    assert(-1 != u_proj_);
     glUniformMatrix4fv(u_proj_, 1, GL_FALSE,
                        glm::value_ptr(std::forward<type>(val)));
   }
@@ -54,6 +56,7 @@ public:
    */
   template <typename type>
   inline void bind_view_uniform(type &&val) const noexcept {
+    assert(-1 != u_view_);
     glUniformMatrix4fv(u_view_, 1, GL_FALSE,
                        glm::value_ptr(std::forward<type>(val)));
   }
@@ -65,6 +68,7 @@ public:
    */
   template <typename type>
   inline void bind_model_uniform(type &&val) const noexcept {
+    assert(-1 != u_model_);
     glUniformMatrix4fv(u_model_, 1, GL_FALSE,
                        glm::value_ptr(std::forward<type>(val)));
   }
@@ -75,6 +79,7 @@ public:
    *
    */
   inline void enable_position_pointer() const noexcept {
+    assert(-1 != a_pos_);
     glEnableVertexAttribArray(a_pos_);
     glVertexAttribPointer(a_pos_, 3,
                           GL_FLOAT, GL_FALSE,
@@ -87,6 +92,7 @@ public:
    *
    */
   inline void enable_normal_pointer() const noexcept {
+    assert(-1 != a_normal_);
     glEnableVertexAttribArray(a_normal_);
     glVertexAttribPointer(a_normal_, 3,
                           GL_FLOAT, GL_FALSE,
@@ -99,6 +105,7 @@ public:
    *
    */
   inline void enable_texture_coord_pointer() const noexcept {
+    assert(-1 != a_tex_);
     glEnableVertexAttribArray(a_tex_);
     glVertexAttribPointer(a_tex_, 2,
                           GL_FLOAT, GL_FALSE,
@@ -124,13 +131,13 @@ public:
     assert(vert_.compile(vs_text));
     assert(frag_.compile(fs_text));
     assert(link_shaders(vert_, frag_));
-    u_model_ = uniform("unfm_model");
-    u_view_ = uniform("unfm_view");
-    u_proj_ = uniform("unfm_proj");
-    u_solar_dir_ = uniform("unfm_solar_from");
-    a_pos_ = attribute("attb_pos");
-    a_normal_ = attribute("attb_normal");
-    a_tex_ = attribute("attb_text");
+    u_model_ = uniform("u_Modl");
+    u_view_ = uniform("u_View");
+    u_proj_ = uniform("u_Proj");
+    u_solar_dir_ = uniform("u_LightFrom");
+    a_pos_ = attribute("a_Pos");
+    a_normal_ = attribute("a_Normal");
+    a_tex_ = attribute("a_TexCoord");
   }
 
   /**

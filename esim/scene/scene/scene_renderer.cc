@@ -30,7 +30,7 @@ public:
 
     surface_layer_->draw(info);
     solar_->draw(info);
-    atmosphere_layer_->draw(info);
+    // atmosphere_layer_->draw(info);
     // surface_layer_->draw_bounding_box(cmr);
     // debuger_layer_->draw(cmr);
   }

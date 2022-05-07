@@ -102,8 +102,6 @@ public:
       }
     }
 
-    std::cout << glm::to_string(offset_) << std::endl;
-
     return res;
   }
 

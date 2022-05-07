@@ -1,15 +1,15 @@
-#version 330
+#version 460
 precision highp float;
-in vec3 vary_frag_pos;
-in vec3 vary_normal;
-in vec2 vary_tex_coord;
-uniform vec3 unfm_solar_from;
-uniform mat4 unfm_solar_rotation;
-uniform sampler2D basemap;
+
+uniform vec3 u_LightFrom;
+uniform sampler2D u_BaseMap;
+
+in vec3 v_Normal;
+in vec2 v_TexCoord;
 
 vec3 compute_diffuse() {
-  vec3 light_dir = -1.0 * unfm_solar_from;
-  float diff = max(dot(normalize(vary_normal), light_dir), 0.0);
+  vec3 light_dir = -1.0 * u_LightFrom;
+  float diff = max(dot(normalize(v_Normal), light_dir), 0.0);
 
   return diff * vec3(1.0);
 }
@@ -27,7 +27,7 @@ vec3 compute_light(const vec3 base_color) {
 }
 
 void main() {
-  vec3 base_color = texture(basemap, vary_tex_coord).xyz;
+  vec3 base_color = texture(u_BaseMap, v_TexCoord).xyz;
   gl_FragColor.rgb = compute_light(base_color);
   gl_FragColor.a = 1.0;
 }

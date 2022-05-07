@@ -62,9 +62,13 @@ public:
       : msg_queue_{512},
         state_{to_raw(render_state::normal)},
         rderer_{make_ptr_u<scene_renderer>()},
-        rendering_infos_{} {}
+        rendering_infos_{} {
+  }
 
-  ~impl() = default;
+  ~impl() noexcept {
+    scene_message msg;
+    while (msg_queue_.try_pop(msg));
+  }
 
   inline void push_event(r_ptr<scene_message> msg) noexcept {
     resume_render();

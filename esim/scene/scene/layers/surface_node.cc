@@ -35,10 +35,7 @@ public:
     temp.x = glm::radians(temp.x);
     temp.y = glm::radians(temp.y);
     trans::wgs84geo_to_ecef(temp, temp);
-    offset_ += temp;
-    vtx.pos.x = temp.x;
-    vtx.pos.y = temp.y;
-    vtx.pos.z = temp.z;
+    vtx.pos = temp;
 
     max_.x = glm::max(max_.x, vtx.pos.x);
     max_.y = glm::max(max_.y, vtx.pos.y);
@@ -50,14 +47,13 @@ public:
 
   inline void confirm() noexcept {
     using namespace glm;
-    offset_ /= static_cast<double>(vertex_count_);
-    max_ -= offset_;
-    min_ -= offset_;
-
     /// calculating normal
     for (size_t i=1; i<vertex_details_+2; ++i) {
       for (size_t j=1; j<vertex_details_+2; ++j) {
         auto &curr = computing_[to_index(i, j)];
+        if (j != vertex_details_ - 1) {
+          offset_ += curr.pos;
+        }
         auto up = computing_[to_index(i, j-1)].pos - curr.pos;
         auto upleft = computing_[to_index(i-1, j-1)].pos - curr.pos;
         auto left = computing_[to_index(i-1, j)].pos - curr.pos;
@@ -78,6 +74,9 @@ public:
         curr.normal = normalize(curr.normal);
       }
     }
+    offset_ /= static_cast<double>(vertex_count_);
+    max_ -= offset_;
+    min_ -= offset_;
   }
 
   inline glm::dvec3 offset() const noexcept {
@@ -214,7 +213,6 @@ public:
     program->enable_texture_coord_pointer();
     basemap_.bind();
     program->bind_model_uniform(model);
-    program->bind_solar_dir_uniform(sun.rotate_to_solar_direction(glm::mat4x4{1.0}));
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   

@@ -72,6 +72,7 @@ public:
 
 private:
   inline void error_call(const char *msg) const {
+    std::cout << msg << std::endl;
     if (nullptr != error_callback_) {
       error_callback_(msg);
     }

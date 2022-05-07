@@ -3,6 +3,9 @@
 
 #include "glapi/program.h"
 #include "glapi/shader.h"
+#include "glm/vec3.hpp"
+#include "scene/render/rendering_infos.h"
+#include "transform/wgs84.h"
 #include "utils/camera.h"
 #include "utils/utils.h"
 #include <fstream>
@@ -25,40 +28,38 @@ struct surface_node_vertex {
 
 class surface_program final : public gl::program {
 public:
-  /**
-   * @brief Bind solar from direction uniform 
-   * 
-   * @param val specifies the vec3 value.
-   */
-  template <typename type>
-  inline void bind_solar_dir_uniform(type &&val) const noexcept {
-    assert(-1 != u_solar_dir_);
-    glUniform3fv(u_solar_dir_, 1,
-                 glm::value_ptr(std::forward<type>(val)));
-  }
+  inline void bind_common_uniform(const rendering_infos& info) const noexcept {
+    using namespace glm;
+    constexpr static float kr = 0.0025f;
+    constexpr static float km = 0.0010f;
+    constexpr static float esun = 20.0f;
 
-  /**
-   * @brief Bind perspective matrix uniform 
-   * 
-   * @param val specifies the mat4x4 value.
-   */
-  template <typename type>
-  inline void bind_proj_uniform(type &&val) const noexcept {
-    assert(-1 != u_proj_);
-    glUniformMatrix4fv(u_proj_, 1, GL_FALSE,
-                       glm::value_ptr(std::forward<type>(val)));
-  }
-  
-  /**
-   * @brief Bind view matrix uniform 
-   * 
-   * @param val specifies the mat4x4 value.
-   */
-  template <typename type>
-  inline void bind_view_uniform(type &&val) const noexcept {
-    assert(-1 != u_view_);
-    glUniformMatrix4fv(u_view_, 1, GL_FALSE,
-                       glm::value_ptr(std::forward<type>(val)));
+    constexpr static float outer_radius = static_cast<float>(trans::WGS84_A * 1.1);
+    constexpr static float inner_radius = static_cast<float>(trans::WGS84_A); 
+    constexpr static float ray_scale_depth = 0.25f;
+    constexpr static float mie_scale_depth = 0.1f;
+    constexpr static vec3  wave_length = {0.650f, 0.570f, 0.475f};
+
+    auto &cmr = info.camera;
+    auto &sun = info.sun;
+
+    glUniform3fv(u_camera_pos_, 1, glm::value_ptr(static_cast<vec3>(cmr.ecef())));
+    glUniform3fv(u_light_dir_, 1, glm::value_ptr(static_cast<vec3>(sun.direction())));
+
+    glUniform3fv(u_inv_wave_length_, 1, glm::value_ptr(wave_length));
+    glUniform1f(u_outer_radius_, outer_radius);
+    glUniform1f(u_inner_radius_, inner_radius);
+    glUniform1f(u_kr_esun_, kr * esun);
+    glUniform1f(u_km_esun_, km * esun);
+    glUniform1f(u_kr4pi_, km * pi<float>() * 4.0f);
+    glUniform1f(u_km4pi_, km * pi<float>() * 4.0f);
+    glUniform1f(u_scale_, 1.0f / (outer_radius - inner_radius));
+    glUniform1f(u_scale_depth_, ray_scale_depth);
+    glUniform1f(u_scale_over_scale_depth_, 1.0f / (outer_radius - inner_radius) * ray_scale_depth);
+
+
+    glUniformMatrix4fv(u_view_, 1, GL_FALSE, glm::value_ptr(cmr.view()));
+    glUniformMatrix4fv(u_proj_, 1, GL_FALSE, glm::value_ptr(cmr.projection()));
   }
 
   /**
@@ -120,24 +121,33 @@ public:
    */
   surface_program(gl_error_callback err_cb = nullptr) noexcept
       : gl::program{err_cb},
-        vert_{GL_VERTEX_SHADER},
-        frag_{GL_FRAGMENT_SHADER},
-        u_model_{-1}, u_view_{-1}, u_proj_{-1}, u_solar_dir_{-1},
+        common_vert_{GL_VERTEX_SHADER}, common_frag_{GL_FRAGMENT_SHADER},
+        vert_{GL_VERTEX_SHADER}, frag_{GL_FRAGMENT_SHADER},
+        u_camera_pos_{-1}, u_light_dir_{-1}, u_inv_wave_length_{-1}, u_outer_radius_{-1},
+        u_inner_radius_{-1}, u_kr_esun_{-1}, u_km_esun_{-1}, u_kr4pi_{-1}, u_km4pi_{-1}, u_scale_{-1},
+        u_scale_depth_{-1}, u_scale_over_scale_depth_{-1},
+        u_model_{-1}, u_view_{-1}, u_proj_{-1},
         a_pos_{-1}, a_normal_{-1}, a_tex_{-1},
         error_msg_{err_cb} {
-    std::string vs_text, fs_text;
+    std::string common_text, vs_text, fs_text;
+    assert(read_file("glsl/common.glsl", common_text));
     assert(read_file("glsl/surface.vert", vs_text));
     assert(read_file("glsl/surface.frag", fs_text));
+    assert(common_vert_.compile(common_text));
+    assert(common_frag_.compile(common_text));
     assert(vert_.compile(vs_text));
     assert(frag_.compile(fs_text));
-    assert(link_shaders(vert_, frag_));
-    u_model_ = uniform("u_Modl");
-    u_view_ = uniform("u_View");
-    u_proj_ = uniform("u_Proj");
-    u_solar_dir_ = uniform("u_LightFrom");
-    a_pos_ = attribute("a_Pos");
-    a_normal_ = attribute("a_Normal");
-    a_tex_ = attribute("a_TexCoord");
+    assert(link_shaders(vert_, frag_, common_vert_, common_frag_));
+    
+    u_camera_pos_ = uniform("u_CameraPos"); u_light_dir_ = uniform("u_LightDir"); u_inv_wave_length_ = uniform("u_InvWavelength");
+    u_outer_radius_ = uniform("u_OuterRadius"); u_inner_radius_ = uniform("u_InnerRadius");
+    u_kr_esun_ = uniform("u_KrESun"); u_km_esun_ = uniform("u_KmESun"); u_kr4pi_ = uniform("u_Kr4PI"); u_km4pi_ = uniform("u_Km4PI");
+    u_scale_ = uniform("u_Scale"); u_scale_depth_ = uniform("u_ScaleDepth");
+    u_scale_over_scale_depth_ = uniform("u_ScaleOverScaleDepth");
+
+    u_model_ = uniform("u_Modl"); u_view_ = uniform("u_View"); u_proj_ = uniform("u_Proj");
+
+    a_pos_ = attribute("a_Pos"); a_normal_ = attribute("a_Normal"); a_tex_ = attribute("a_TexCoord");
   }
 
   /**
@@ -177,9 +187,11 @@ private:
   }
 
 private:
-  gl::shader vert_,
-             frag_;
-  GLint      u_model_, u_view_, u_proj_, u_solar_dir_;
+  gl::shader common_vert_, common_frag_, vert_, frag_;
+  GLint      u_camera_pos_, u_light_dir_, u_inv_wave_length_, u_outer_radius_,
+             u_inner_radius_, u_kr_esun_, u_km_esun_, u_kr4pi_, u_km4pi_, u_scale_,
+             u_scale_depth_, u_scale_over_scale_depth_;
+  GLint      u_model_, u_view_, u_proj_;
   GLint      a_pos_, a_normal_, a_tex_;
   gl_error_callback error_msg_;
 };

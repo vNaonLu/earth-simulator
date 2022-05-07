@@ -1,33 +1,22 @@
 #version 460
 precision highp float;
 
-uniform vec3 u_LightFrom;
+uniform vec3 u_LightDir;
 uniform sampler2D u_BaseMap;
 
 in vec3 v_Normal;
 in vec2 v_TexCoord;
+in vec3 v_GroundColor;
+in vec3 v_Attenuation;
 
-vec3 compute_diffuse() {
-  vec3 light_dir = -1.0 * u_LightFrom;
-  float diff = max(dot(normalize(v_Normal), light_dir), 0.0);
-
-  return diff * vec3(1.0);
-}
-
-vec3 compute_ambient() {
-
-  return vec3(1.0, 1.0, 1.0) * 0.1;
-}
-
-vec3 compute_light(const vec3 base_color) {
-  vec3 ambient = compute_ambient();
-  vec3 diffuse = compute_diffuse();
-
-  return (ambient + diffuse) * base_color;
-}
+void CalcLightScale(out vec3 out_lightScale, vec3 normal);
 
 void main() {
-  vec3 base_color = texture(u_BaseMap, v_TexCoord).xyz;
-  gl_FragColor.rgb = compute_light(base_color);
+  vec3 light_scale;
+  vec3 base_color = v_GroundColor + texture2D(u_BaseMap, v_TexCoord).xyz * v_Attenuation;
+
+  CalcLightScale(light_scale, v_Normal);
+
+  gl_FragColor.rgb = light_scale * base_color;
   gl_FragColor.a = 1.0;
 }

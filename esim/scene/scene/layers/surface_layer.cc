@@ -58,8 +58,7 @@ public:
     auto program = surface_program::get();
     ibo_.bind(0);
     program->use();
-    program->bind_view_uniform(info.camera.view());
-    program->bind_proj_uniform(info.camera.projection());
+    program->bind_common_uniform(info);
     for (auto &node : drawings) {
       node->draw(info, ibo_.size());
       // node->draw_grid(cmr, ibo_.size(0));

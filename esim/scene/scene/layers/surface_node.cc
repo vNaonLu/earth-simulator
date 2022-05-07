@@ -213,7 +213,6 @@ public:
     program->enable_texture_coord_pointer();
     basemap_.bind();
     program->bind_model_uniform(model);
-    program->bind_solar_dir_uniform(sun.rotate_to_solar_direction(glm::mat4x4{1.0}));
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
   }
   

@@ -267,3 +267,29 @@ void ONAS_CalcColorsForGroundOutside(out vec3 out_groundCol, out vec3 out_attenu
 
   ONAS_RaytraceScatterGround(out_groundCol, out_attenuation, pos, raySta, rayDir, rayLen, u_OuterRadius, near);
 }
+
+//==================================================================
+// calculate the diffuse
+void CalcDiffuse(out vec3 out_diffuse, vec3 normal) {
+  float diff = max(dot(normalize(normal), -1 * u_LightDir), 0.0);
+
+  out_diffuse = diff * vec3(1.0);
+}
+
+//==================================================================
+// calculate the ambient
+void CalcAmbient(out vec3 out_ambient) {
+  out_ambient =  vec3(1.0, 1.0, 1.0) * 0.1;
+}
+
+//==================================================================
+// calculate light scale
+void CalcLightScale(out vec3 out_lightScale, vec3 normal) {
+  vec3 ambient;
+  vec3 diffuse;
+
+  CalcDiffuse(diffuse, normal);
+  CalcAmbient(ambient);
+
+  out_lightScale =  ambient + diffuse;
+}

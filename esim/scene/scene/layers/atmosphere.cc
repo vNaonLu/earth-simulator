@@ -14,21 +14,20 @@ public:
   inline void draw(const rendering_infos &info) noexcept {
     using namespace glm;
     auto &cmr = info.camera;
-    auto &sun = info.sun;
     auto program = atmosphere_program::get();
     program->use();
     ebo_.bind();
     vbo_.bind();
+
+    // glFrontFace(GL_CW);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_ONE, GL_ONE);
     program->enable_position_pointer();
+    program->bind_common_uniform(info);
     program->bind_model_uniform(cmr.model(offset_));
-    program->bind_view_uniform(cmr.view());
-    program->bind_proj_uniform(cmr.projection());
-    program->bind_view_depth_uniform(250'000);
-    program->bind_scatter_coefficient_uniform(vec4{0.1981, 0.4656, 0.8625, 0.75});
-    program->bind_solor_dir_uniform(static_cast<vec3>(sun.direction()));
-    // glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ebo_.size()), GL_UNSIGNED_INT, nullptr);
-    glDrawElements(GL_LINES, static_cast<GLsizei>(ebo_.size()), GL_UNSIGNED_INT, nullptr);
-    ESIM_GL_TRACE();
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(ebo_.size()), GL_UNSIGNED_INT, nullptr);
+    // glDisable(GL_BLEND);
+    // glFrontFace(GL_CCW);
   }
 
   impl() noexcept : offset_{0.0f} {
@@ -42,8 +41,8 @@ public:
   ~impl() noexcept {}
 
 private:
-  constexpr static size_t latitude_details = 23;
-  constexpr static size_t longitude_details = 23;
+  constexpr static size_t latitude_details = 180;
+  constexpr static size_t longitude_details = 360;
   constexpr static double max_latitude = +90.0;
   constexpr static double min_latitude = -90.0;
   constexpr static double stride_latitude = (max_latitude - min_latitude) / latitude_details;
@@ -64,7 +63,7 @@ private:
         auto &v = (*it++).pos;
         dvec3 ecef{radians(min_latitude + stride_latitude * i),
                    radians(min_longitude + stride_longitude * j),
-                   100'000};
+                   60'000};
         trans::wgs84geo_to_ecef(ecef, ecef);
         v.x = static_cast<float>(ecef.x);
         v.y = static_cast<float>(ecef.y);

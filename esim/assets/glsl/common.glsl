@@ -6,19 +6,20 @@
 /// Based on the GPU Gems 2 demo by Sean O'Neil (2004)
 //==================================================================
 
-uniform vec3 u_CameraPos;      // The camera's current position
-uniform vec3 u_LightDir;       // The direction vector to the light source
+uniform vec3  u_CameraPos;           // The camera's current position
+uniform vec3  u_LightDir;            // The direction vector to the light source
 
-uniform vec3 u_InvWavelength;  // 1 / pow(wavelength, 4) for the red, green, and blue channels
-uniform float u_OuterRadius;    // The outer (atmosphere) radius
-uniform float u_InnerRadius;    // The inner (planetary) radius
-uniform float u_KrESun;         // Kr * ESun
-uniform float u_KmESun;         // Km * ESun
-uniform float u_Kr4PI;          // Kr * 4 * PI
-uniform float u_Km4PI;          // Km * 4 * PI
-uniform float u_Scale;          // 1 / (u_OuterRadius - u_InnerRadius)
-uniform float u_ScaleDepth;     // The scale depth (i.e. the altitude at which the atmosphere's average density is found)
+uniform vec3  u_InvWavelength;       // 1 / pow(wavelength, 4) for the red, green, and blue channels
+uniform float u_OuterRadius;         // The outer (atmosphere) radius
+uniform float u_InnerRadius;         // The inner (planetary) radius
+uniform float u_KrESun;              // Kr * ESun
+uniform float u_KmESun;              // Km * ESun
+uniform float u_Kr4PI;               // Kr * 4 * PI
+uniform float u_Km4PI;               // Km * 4 * PI
+uniform float u_Scale;               // 1 / (u_OuterRadius - u_InnerRadius)
+uniform float u_ScaleDepth;          // The scale depth (i.e. the altitude at which the atmosphere's average density is found)
 uniform float u_ScaleOverScaleDepth; // u_Scale / u_ScaleDepth
+uniform float u_g;
 
 const int SAMPLES_N = 2;
 const float SAMPLES_F = 2.0;

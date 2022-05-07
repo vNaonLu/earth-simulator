@@ -24,62 +24,41 @@ struct atmosphere_vertex {
 
 class atmosphere_program final : public gl::program {
 public:
-  /**
-   * @brief Bind view depth uniform 
-   * 
-   * @param val specifies the float value.
-   */
-  inline void bind_view_depth_uniform(GLfloat val) const noexcept {
-    glUniform1f(u_view_depth_, val);
+  inline void bind_common_uniform(const rendering_infos& info) const noexcept {
+    using namespace glm;
+    constexpr static float kr = 0.0025f;
+    constexpr static float km = 0.0010f;
+    constexpr static float esun = 20.0f;
+
+    constexpr static float outer_radius = static_cast<float>(trans::WGS84_A * 1.025);
+    constexpr static float inner_radius = static_cast<float>(trans::WGS84_A); 
+    constexpr static float ray_scale_depth = 0.25f;
+    constexpr static float mie_scale_depth = 0.1f;
+    constexpr static vec3  wave_length = {0.650f, 0.570f, 0.475f};
+    vec3  inv_quat_wavelength = 1.0f / glm::pow(wave_length, vec3(4.0f));
+
+    auto &cmr = info.camera;
+    auto &sun = info.sun;
+
+    glUniform3fv(u_camera_pos_, 1, glm::value_ptr(static_cast<vec3>(cmr.ecef())));
+    glUniform3fv(u_light_dir_, 1, glm::value_ptr(static_cast<vec3>(sun.direction())));
+
+    glUniform3fv(u_inv_wave_length_, 1, glm::value_ptr(inv_quat_wavelength));
+    glUniform1f(u_outer_radius_, outer_radius);
+    glUniform1f(u_inner_radius_, inner_radius);
+    glUniform1f(u_kr_esun_, kr * esun);
+    glUniform1f(u_km_esun_, km * esun);
+    glUniform1f(u_kr4pi_, km * pi<float>() * 4.0f);
+    glUniform1f(u_km4pi_, km * pi<float>() * 4.0f);
+    glUniform1f(u_scale_, 1.0f / (outer_radius - inner_radius));
+    glUniform1f(u_scale_depth_, ray_scale_depth);
+    glUniform1f(u_scale_over_scale_depth_, 1.0f / (outer_radius - inner_radius) * ray_scale_depth);
+    glUniform1f(u_g_, 0.999f);
+
+    glUniformMatrix4fv(u_view_, 1, GL_FALSE, glm::value_ptr(cmr.view()));
+    glUniformMatrix4fv(u_proj_, 1, GL_FALSE, glm::value_ptr(cmr.projection()));
   }
   
-  /**
-   * @brief Bind scatter color coefficients uniform 
-   * 
-   * @param val specifies the vec4 value.
-   * @note r, g, b, ambient
-   */
-  template <typename type>
-  inline void bind_scatter_coefficient_uniform(type &&val) const noexcept {
-    glUniform4fv(u_scatter_, 1,
-                 glm::value_ptr(std::forward<type>(val)));
-  }
-
-  /**
-   * 
-   * @brief Bind solar direction uniform 
-   * 
-   * @param val specifies the vec3 value.
-   */
-  template <typename type>
-  inline void bind_solor_dir_uniform(type &&val) const noexcept {
-    glUniform3fv(u_solor_dir_, 1,
-                 glm::value_ptr(std::forward<type>(val)));
-  }
-
-  /**
-   * @brief Bind perspective matrix uniform 
-   * 
-   * @param val specifies the mat4x4 value.
-   */
-  template <typename type>
-  inline void bind_proj_uniform(type &&val) const noexcept {
-    glUniformMatrix4fv(u_proj_, 1, GL_FALSE,
-                       glm::value_ptr(std::forward<type>(val)));
-  }
-  
-  /**
-   * @brief Bind view matrix uniform 
-   * 
-   * @param val specifies the mat4x4 value.
-   */
-  template <typename type>
-  inline void bind_view_uniform(type &&val) const noexcept {
-    glUniformMatrix4fv(u_view_, 1, GL_FALSE,
-                       glm::value_ptr(std::forward<type>(val)));
-  }
-
-
   /**
    * @brief Bind model uniform 
    * 
@@ -111,24 +90,31 @@ public:
    */
   atmosphere_program(gl_error_callback err_cb = nullptr) noexcept
       : gl::program{err_cb},
-        vert_{GL_VERTEX_SHADER},
-        frag_{GL_FRAGMENT_SHADER},
-        u_model_{-1}, u_solor_dir_{-1}, u_scatter_{-1},
-        u_view_depth_{-1}, a_pos_{-1},
-        error_msg_{err_cb} {
-    std::string vs_text, fs_text;
+        common_vert_{GL_VERTEX_SHADER}, common_frag_{GL_FRAGMENT_SHADER},
+        vert_{GL_VERTEX_SHADER}, frag_{GL_FRAGMENT_SHADER},
+        u_camera_pos_{-1}, u_light_dir_{-1}, u_inv_wave_length_{-1}, u_outer_radius_{-1},
+        u_inner_radius_{-1}, u_kr_esun_{-1}, u_km_esun_{-1}, u_kr4pi_{-1}, u_km4pi_{-1}, u_scale_{-1},
+        u_scale_depth_{-1}, u_scale_over_scale_depth_{-1}, u_g_{-1},
+        a_pos_{-1}, error_msg_{err_cb} {
+    std::string common_text, vs_text, fs_text;
+    assert(read_file("glsl/common.glsl", common_text));
     assert(read_file("glsl/atmosphere.vert", vs_text));
     assert(read_file("glsl/atmosphere.frag", fs_text));
+    assert(common_vert_.compile(common_text));
+    assert(common_frag_.compile(common_text));
     assert(vert_.compile(vs_text));
     assert(frag_.compile(fs_text));
-    assert(link_shaders(vert_, frag_));
-    u_model_ = uniform("unfm_model");
-    u_view_ = uniform("unfm_view");
-    u_proj_ = uniform("unfm_proj");
-    u_solor_dir_ = uniform("unfm_solar_dir");
-    u_scatter_ = uniform("unfm_scatter_coefficients");
-    u_view_depth_ = uniform("unfm_view_depth");
-    a_pos_ = attribute("attb_pos");
+    assert(link_shaders(vert_, frag_, common_vert_, common_frag_));
+
+    u_model_ = uniform("u_Modl"); u_view_ = uniform("u_View"); u_proj_ = uniform("u_Proj");
+    
+    u_camera_pos_ = uniform("u_CameraPos"); u_light_dir_ = uniform("u_LightDir"); u_inv_wave_length_ = uniform("u_InvWavelength");
+    u_outer_radius_ = uniform("u_OuterRadius"); u_inner_radius_ = uniform("u_InnerRadius");
+    u_kr_esun_ = uniform("u_KrESun"); u_km_esun_ = uniform("u_KmESun"); u_kr4pi_ = uniform("u_Kr4PI"); u_km4pi_ = uniform("u_Km4PI");
+    u_scale_ = uniform("u_Scale"); u_scale_depth_ = uniform("u_ScaleDepth");
+    u_scale_over_scale_depth_ = uniform("u_ScaleOverScaleDepth"); u_g_ = uniform("u_g");
+
+    a_pos_ = attribute("a_Pos");
   }
 
   /**
@@ -162,19 +148,19 @@ private:
   }
 
   void error(const char *msg) const {
+    std::cout << msg << std::endl;
     if (nullptr != error_msg_) {
       error_msg_(msg);
-    } else {
-      std::cout << msg << std::endl;
     }
   }
 
 private:
-  gl::shader        vert_,
-                    frag_;
-  GLint             u_model_, u_view_, u_proj_, u_solor_dir_,
-                    u_scatter_, u_view_depth_;
-  GLint             a_pos_;
+  gl::shader common_vert_, common_frag_, vert_, frag_;
+  GLint      u_camera_pos_, u_light_dir_, u_inv_wave_length_, u_outer_radius_,
+             u_inner_radius_, u_kr_esun_, u_km_esun_, u_kr4pi_, u_km4pi_, u_scale_,
+             u_scale_depth_, u_scale_over_scale_depth_, u_g_;
+  GLint      u_model_, u_view_, u_proj_;
+  GLint      a_pos_;
   gl_error_callback error_msg_;
 };
 

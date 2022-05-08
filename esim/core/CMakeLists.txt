@@ -5,7 +5,7 @@ add_library(
 
 target_include_directories(
   ${PROJECT_NAME}_core
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(
   ${PROJECT_NAME}_core

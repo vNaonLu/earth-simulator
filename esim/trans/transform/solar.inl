@@ -29,6 +29,11 @@ inline glm::dvec3 vector_to_sun(double jd) noexcept {
   return vector_to_sun(jd, dummy);
 }
 
+inline constexpr double astronomical_unit() noexcept {
+
+  return 149'597'870'700.0f;
+}
+
 } // namespace trans
 
 } // namespace esim

@@ -39,6 +39,28 @@ public:
    * @return a 3-float vector. 
    */
   glm::vec3 direction() const noexcept;
+  
+  /**
+   * @brief Obtain the solar direction (from origin to sun) scaled in AU.
+   * 
+   * @return a 3-float vector. 
+   */
+  glm::vec3 direction_AU() const noexcept;
+  
+  /**
+   * @brief Obtain the visual pixel size of sun.
+   * 
+   * @param cmr specifies the current camera information.
+   * @return the pixel radius of visual size of the sun.
+   */
+  static float visual_pixel_size_of_sun(const camera &cmr) noexcept;
+
+  /**
+   * @brief Obtain the radius of sun in meters.
+   * 
+   * @return the constant radius in meters of sun. 
+   */
+  constexpr static double radius() noexcept;
 
   /**
    * @brief Construct a new sun object.

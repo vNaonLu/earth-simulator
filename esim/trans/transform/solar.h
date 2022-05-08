@@ -25,6 +25,13 @@ glm::dvec3 vector_to_sun(double jd, glm::dvec3 &vec) noexcept;
  */
 glm::dvec3 vector_to_sun(double jd) noexcept;
 
+/**
+ * @brief Obtain the AU in meters.
+ * 
+ * @return AU in meters.
+ */
+constexpr double astronomical_unit() noexcept;
+
 } // namespace trans
 
 } // namespace esim

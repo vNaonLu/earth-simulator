@@ -29,12 +29,10 @@ public:
     using namespace glm;
     auto &cmr = info.camera;
     auto &sun = info.sun;
-    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(- cmr.ecef()));;
-    m = scale(m, vec3{trans::WGS84_A * 3.0, trans::WGS84_A * 3.0, trans::WGS84_A * 3.0});
+    auto m = translate(mat4x4{1.0f}, static_cast<vec3>(- cmr.ecef()));
+    m = scale(m, vec3{static_cast<float>(trans::astronomical_unit())});
     m = sun.rotate_to_solar_direction(m);
 
-    // m = scale(m, vec3{trans::WGS84_A * 3.0, trans::WGS84_A * 3.0, trans::WGS84_A * 3.0});
-    
     auto program = solar_program::get();
     program->use();
     vbo_.bind();
@@ -43,9 +41,15 @@ public:
     program->bind_view_uniform(cmr.view());
     program->bind_model_uniform(m);
     program->bind_color_uniform(vec4{1.0f, 1.0f, 1.0f, 1.0f});
-    glPointSize(10.0);
+    glPointSize(2 * sun.visual_pixel_size_of_sun(cmr));
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
     glDrawArrays(GL_POINTS, 0, 1);
+    program->bind_color_uniform(vec4{1.0f, 1.0f, 1.0f, 0.2f});
     glDrawArrays(GL_LINES, 0, 2);
+    glDepthMask(GL_TRUE);
+
   }
 
   impl() noexcept {

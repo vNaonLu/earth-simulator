@@ -28,11 +28,12 @@ public:
     
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
-
+    
     outer_space_layer_->draw(info);
+
+    solar_->draw(info);
     surface_layer_->draw(info);
     atmosphere_layer_->draw(info);
-    solar_->draw(info);
     // debuger_layer_->draw(cmr);
   }
 

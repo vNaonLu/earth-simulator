@@ -1,7 +1,8 @@
-#version 330
+#version 460
 precision highp float;
-uniform vec4 unfm_color;
+
+uniform vec4 u_SolarColor;
 
 void main() {
-  gl_FragColor = unfm_color;
+  gl_FragColor = u_SolarColor;
 }

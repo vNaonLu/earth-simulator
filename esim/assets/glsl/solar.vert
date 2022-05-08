@@ -1,10 +1,13 @@
-#version 330
+#version 460
 precision highp float;
-attribute vec3 attb_pos;
-uniform   mat4 unfm_model;
-uniform   mat4 unfm_view;
-uniform   mat4 unfm_proj;
+
+uniform   mat4 u_Modl;
+uniform   mat4 u_View;
+uniform   mat4 u_Proj;
+
+in vec3 a_Pos;
 
 void main () {
-  gl_Position = unfm_proj * unfm_view * unfm_model * vec4(attb_pos, 1.0);
+  gl_Position = u_Proj * u_View * u_Modl * vec4(a_Pos, 1.0);
+  gl_Position.z = min(gl_Position.z, 1.0); /// fixes the depth in deepest
 }

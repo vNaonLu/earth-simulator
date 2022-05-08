@@ -98,11 +98,11 @@ public:
     assert(vert_.compile(vs_text));
     assert(frag_.compile(fs_text));
     assert(link_shaders(vert_, frag_));
-    u_model_ = uniform("unfm_model");
-    u_view_ = uniform("unfm_view");
-    u_proj_ = uniform("unfm_proj");
-    u_color_ = uniform("unfm_color");
-    a_pos_ = attribute("attb_pos");
+    u_model_ = uniform("u_Modl");
+    u_view_ = uniform("u_View");
+    u_proj_ = uniform("u_Proj");
+    u_color_ = uniform("u_SolarColor");
+    a_pos_ = attribute("a_Pos");
   }
 
   /**

@@ -17,12 +17,14 @@ public:
    * 
    * @return A projection matrix.
    */
-  inline glm::mat4x4 projection() const noexcept {
+  template <typename type = float>
+  inline glm::mat<4, 4, type> projection() const noexcept {
     using namespace glm;
-    const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
-    
-    return perspective(radians(45.f), aspect,
-                       static_cast<float>(near_far_.x), static_cast<float>(near_far_.y));
+    const type aspect = viewport_.y == 0.0f ? 0.0f : (type)viewport_.x / (type)viewport_.y;
+
+    return perspective(static_cast<type>(radians(45.f)), aspect,
+                       static_cast<type>(near_far_.x),
+                       static_cast<type>(near_far_.y));
   }
 
   /**

@@ -63,7 +63,7 @@ private:
         auto &v = (*it++).pos;
         dvec3 ecef{radians(min_latitude + stride_latitude * i),
                    radians(min_longitude + stride_longitude * j),
-                   60'000};
+                   100'000};
         trans::wgs84geo_to_ecef(ecef, ecef);
         v.x = static_cast<float>(ecef.x);
         v.y = static_cast<float>(ecef.y);

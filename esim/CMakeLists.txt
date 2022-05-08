@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-foreach(MODULE trans utils scene)
+foreach(MODULE core trans utils scene)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})
@@ -16,7 +16,8 @@ add_executable(
 
 target_link_libraries(
   ${PROJECT_NAME}
-  PRIVATE ${PROJECT_NAME}::utils
+  PRIVATE ${PROJECT_NAME}::core
+          ${PROJECT_NAME}::utils
           ${PROJECT_NAME}::trans
           ${PROJECT_NAME}::scene
           vendor::glfw

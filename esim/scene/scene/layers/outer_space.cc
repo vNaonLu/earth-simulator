@@ -23,7 +23,8 @@ public:
     program->enable_position_pointer();
     program->enable_texture_coord_pointer();
     program->bind_common_uniform(info);
-    program->bind_model_uniform(mat4x4{1.0f});
+    // program->bind_model_uniform(mat4x4{1.0f});
+    program->bind_model_uniform(GC_rotation_);
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
@@ -32,7 +33,9 @@ public:
     glEnable(GL_DEPTH_TEST);
   }
 
-  impl() noexcept : offset_{0.0f} {
+  impl() noexcept
+      : GC_rotation_{to_galactic_center()},
+        offset_{0.0f} {
     vbo_.generate_buffer();
     vbo_.bind_buffer_data(gen_vertex_buffer());
 
@@ -58,7 +61,24 @@ private:
   constexpr static double stride_longitude = (max_longitude - min_longitude) / longitude_details;
   
   inline uint32_t to_vertex_index(size_t row, size_t col) const noexcept {
+
     return static_cast<uint32_t>(row * (longitude_details) + col);
+  }
+
+  inline static glm::mat4x4 to_galactic_center() noexcept {
+    /// from equinox to galactic center
+    using namespace glm;
+    /// galactic center locate at
+    /// 17h 45m 40.0409s, −29° 00′ 28.118″ (J2000) By Wikipedia
+    float RA = radians((17.0f * 15.0f) + (45.0f * (15.0f / 60.0f)) + (40.0409f * (15.0f / 60.0f / 60.0f)));
+    float Dc = radians(-29.0f + (0.0f / 60.0f) + (28.118f / 60.0f / 60.0f));
+    vec3  eqinox = normalize(vec3(1.0f, 0.0f, 0.0f));
+    vec3  gal_center = normalize(vec3{cos(Dc) * cos(RA), cos(Dc) * sin(RA), sin(Dc)});
+    vec3  rotation_axis = cross(eqinox, gal_center);
+
+    std::cout << glm ::to_string(gal_center) << std::endl;
+
+    return rotate(mat4x4{1.0f}, acos(dot(eqinox, gal_center)), rotation_axis);
   }
 
   inline std::vector<outer_space_vertex> gen_vertex_buffer() noexcept {
@@ -110,6 +130,7 @@ private:
   }
 
 private:
+  const glm::mat4x4                     GC_rotation_;
   glm::dvec3                            offset_;
   gl::index_buffer<uint32_t>            ebo_;
   gl::vertex_buffer<outer_space_vertex> vbo_;

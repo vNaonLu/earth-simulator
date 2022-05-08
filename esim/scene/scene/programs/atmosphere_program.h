@@ -26,7 +26,7 @@ class atmosphere_program final : public gl::program {
 public:
   inline void bind_common_uniform(const rendering_infos& info) const noexcept {
     using namespace glm;
-    constexpr static float kr = 0.0025f;
+    constexpr static float kr = 0.0015f;
     constexpr static float km = 0.0010f;
     constexpr static float esun = 1.0f;
 

@@ -1,6 +1,7 @@
 #include "scene_renderer.h"
 #include "layers/atmosphere.h"
 #include "layers/debug_layer.h"
+#include "layers/outer_space.h"
 #include "layers/solar.h"
 #include "layers/surface_layer.h"
 #include <glad/glad.h>
@@ -28,6 +29,7 @@ public:
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
+    outer_space_layer_->draw(info);
     surface_layer_->draw(info);
     atmosphere_layer_->draw(info);
     solar_->draw(info);
@@ -36,12 +38,14 @@ public:
 
   impl() noexcept
       : atmosphere_layer_{make_ptr_u<atmosphere>()},
+        outer_space_layer_{make_ptr_u<outer_space>()},
         surface_layer_{make_ptr_u<surface_layer>(33)},
         debuger_layer_{make_ptr_u<debug_layer>()},
         solar_{make_ptr_u<solar>()} {}
 
 private:
   u_ptr<atmosphere> atmosphere_layer_;
+  u_ptr<outer_space> outer_space_layer_;
   u_ptr<surface_layer> surface_layer_;
   u_ptr<debug_layer> debuger_layer_;
   u_ptr<solar> solar_;

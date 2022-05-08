@@ -36,9 +36,9 @@ public:
   /**
    * @brief Obtain the solar direction (from origin to sun).
    * 
-   * @return a 3-doubled vector. 
+   * @return a 3-float vector. 
    */
-  glm::dvec3 direction() const noexcept;
+  glm::vec3 direction() const noexcept;
 
   /**
    * @brief Construct a new sun object.

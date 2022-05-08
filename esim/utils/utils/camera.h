@@ -21,9 +21,20 @@ public:
     using namespace glm;
     const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
     
-    // return perspective(radians(45.f), aspect, 11657.070963025086f, 116570709.63025086f);
     return perspective(radians(45.f), aspect,
                        static_cast<float>(near_far_.x), static_cast<float>(near_far_.y));
+  }
+
+  /**
+   * @brief Obtain skysphere perspective matrix
+   * 
+   * @return A projection matrix.
+   */
+  inline glm::mat4x4 skysphere_projection() const noexcept {
+    using namespace glm;
+    const float aspect = viewport_.y == 0.0f ? 0.0f : (float)viewport_.x / (float)viewport_.y;
+    
+    return perspective(radians(45.f), aspect, 0.0f, sqrt(2.0f));
   }
   
   /**

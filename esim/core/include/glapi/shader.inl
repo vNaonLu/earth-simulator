@@ -57,8 +57,7 @@ inline std::unordered_set<GLuint> shader::dependencies() const noexcept {
 }
 
 inline shader::shader(GLenum type) noexcept
-    : shader_type_{type} {
-  id_ = glCreateShader(type);
+    : shader_type_{type}, id_{glCreateShader(type)} {
 }
 
 inline shader::~shader() noexcept {

@@ -14,7 +14,7 @@ namespace esim {
 namespace gl {
 
 /**
- * @brief Encapsulated OpenGL shader object,
+ * @brief Encapsulated OpenGL shader object.
  * 
  */
 class shader {

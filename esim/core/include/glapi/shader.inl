@@ -47,13 +47,9 @@ inline void shader::include(rptr<shader> dependency) noexcept {
   dependencies_.insert(dependency);
 }
 
-inline std::unordered_set<GLuint> shader::dependencies() const noexcept {
-  std::unordered_set<GLuint> ids;
-  for (auto &so : dependencies_) {
-    ids.insert(so->id());
-  }
+inline const std::unordered_set<rptr<shader>> &shader::dependencies() const noexcept {
 
-  return ids;
+  return dependencies_;
 }
 
 inline shader::shader(GLenum type) noexcept

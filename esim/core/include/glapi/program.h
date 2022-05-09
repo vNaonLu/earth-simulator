@@ -2,6 +2,7 @@
 #define __ESIM_CORE_GLAPI_PROGRAM_H_
 
 #include "core/utils.h"
+#include "shader.h"
 #include <cassert>
 #include <glad/glad.h>
 #include <iostream>
@@ -62,8 +63,12 @@ private:
   template <typename shader_type>
   void attach_shader(shader_type &&sdr) noexcept;
 
+  template <typename shader_type>
+  void attach_shader_recursive(shader_type &&sdr) noexcept;
+
 private:
   GLuint id_;
+  std::unordered_set<GLuint> attached_shaders_;
 };
 
 } // namespace gl

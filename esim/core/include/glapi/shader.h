@@ -61,9 +61,9 @@ public:
   /**
    * @brief Obtain the dependencies of the shader object.
    * 
-   * @return a set of shader ids.
+   * @return a set of shaders.
    */
-  std::unordered_set<GLuint> dependencies() const noexcept;
+  const dep_type &dependencies() const noexcept;
 
   /**
    * @brief Construct a new shader object.

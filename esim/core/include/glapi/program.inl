@@ -59,15 +59,15 @@ inline void program::attach_shader(curr_sd &&sd1, next_sd &&sd2, remains &&...sd
 
 template <typename shader_type>
 inline void program::attach_shader(shader_type &&sdr) noexcept {
-  attach_shader_recursive(adr);
+  attach_shader_recursive(sdr);
 }
 
 template <typename shader_type>
 inline void program::attach_shader_recursive(shader_type &&sdr) noexcept {
-  if (!attached_shaders_.count(sd1.id())) {
-    glAttachShader(id_, sd1.id());
+  if (!attached_shaders_.count(sdr.id())) {
+    glAttachShader(id_, sdr.id());
     
-    for (auto &shader : sd1.dependencies) {
+    for (auto &shader : sdr.dependencies()) {
       assert(shader != nullptr);
       attach_shader_recursive(*shader);
     }

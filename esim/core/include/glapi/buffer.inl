@@ -4,7 +4,7 @@ namespace gl {
 
 template <typename underlying_type>
 inline const std::vector<underlying_type> &buffer<underlying_type>::data(size_t idx) const noexcept {
-  assert(idx <= data_.size());
+  assert(idx < data_.size());
   return data_[idx];
 }
 
@@ -16,7 +16,7 @@ inline size_t buffer<underlying_type>::size(size_t idx) const noexcept {
 
 template <typename underlying_type>
 inline void buffer<underlying_type>::bind(size_t idx) noexcept {
-  assert(idx <= data_.size());
+  assert(idx < data_.size());
   glBindBuffer(type(), ids_[idx]);
 }
 
@@ -28,7 +28,7 @@ inline void buffer<underlying_type>::unbind() const noexcept {
 template <typename underlying_type>
 inline void buffer<underlying_type>::bind_buffer(std::vector<underlying_type> &&data,
                                                  GLenum usage, size_t idx) noexcept {
-  assert(idx <= data_.size());
+  assert(idx < data_.size());
   bind(idx);
   auto &buffer = data_.at(idx) = std::move(data);
   glBufferData(type(), sizeof(underlying_type) * buffer.size(), buffer.data(), usage);

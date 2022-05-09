@@ -9,4 +9,5 @@ target_include_directories(
 
 target_link_libraries(
   ${PROJECT_NAME}_core
-  PUBLIC vendor::glm)
+  PUBLIC vendor::glm
+         vendor::stb)

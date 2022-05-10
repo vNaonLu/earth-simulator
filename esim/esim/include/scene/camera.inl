@@ -97,8 +97,8 @@ inline void camera::set_viewport(int width, int height) noexcept {
 inline void camera::reset() noexcept {
   using namespace glm;
   up_ = dvec3{0.0f, 0.0f, 1.0f};
-  dir_ = dvec3{-1.0f, 0.0f, 0.0f};
-  ecef_ = dvec3{core::astron::earth_major() * 3.0, 0.0f, 0.0f};
+  view_ = dvec3{-1.0f, 0.0f, 0.0f};
+  ecef_ = dvec3{astron::earth_major() * 3.0, 0.0f, 0.0f};
   calculate_near_far();
 }
 
@@ -121,10 +121,10 @@ inline void camera::calculate_near_far() noexcept {
   constexpr static double scalar = 1e4;
   double near, far, alt = height();
   near = ecef_.length();
-  if (near > 1.1 * core::astron::earth_major()) {
-    far = 2 * sqrt(near * near - core::astron::earth_major() * core::astron::earth_major()) + scalar;
+  if (near > 1.1 * astron::earth_major()) {
+    far = 2 * sqrt(near * near - astron::earth_major() * astron::earth_major()) + scalar;
   } else {
-    far = core::astron::earth_major() * scalar;
+    far = astron::earth_major() * scalar;
   }
   near = far / scalar;
   if (near > alt / 50.0) {
@@ -157,6 +157,29 @@ inline void camera::calculate_near_far() noexcept {
 
   near_far_.x = near;
   near_far_.y = far;
+}
+
+inline bool camera::operator!=(const camera &rhs) const noexcept {
+
+  return !(operator==(rhs));
+}
+
+inline bool camera::operator==(const camera &rhs) const noexcept {
+  using namespace glm;
+  return all(equal(viewport_, rhs.viewport_)) &&
+         all(equal(near_far_, rhs.near_far_)) &&
+         all(equal(ecef_, rhs.ecef_)) &&
+         all(equal(view_, rhs.view_)) &&
+         all(equal(up_, rhs.up_));
+}
+
+inline std::ostream &operator<<(std::ostream &os, const camera &cmr) noexcept {
+  os << "position " << glm::to_string(cmr.ecef_) << std::endl;
+  os << "     dir " << glm::to_string(cmr.view_) << std::endl;
+  os << "      up " << glm::to_string(cmr.up_) << std::endl;
+  os << "near far " << glm::to_string(cmr.near_far_) << std::endl;
+  os << "viewport " << glm::to_string(cmr.viewport_) << std::endl;
+  return os;
 }
 
 } // namespace scene

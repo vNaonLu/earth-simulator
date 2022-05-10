@@ -131,6 +131,12 @@ public:
    */
   ~camera() noexcept;
 
+  bool operator==(const camera &rhs) const noexcept;
+
+  bool operator!=(const camera &rhs) const noexcept;
+
+  friend std::ostream &operator<<(std::ostream &os, const camera &cmr) noexcept;
+
 private:
   double height() const noexcept;
 

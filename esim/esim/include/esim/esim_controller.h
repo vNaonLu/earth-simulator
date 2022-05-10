@@ -2,7 +2,7 @@
 #define __ESIM_ESIM_ESIM_ESIM_CONTROLLER_H_
 
 #include "core/observer.h"
-#include "core/subject.h"
+#include "core/publisher.h"
 #include "core/utils.h"
 #include "protocol.h"
 #include "scene/information.h"
@@ -14,7 +14,7 @@ namespace esim {
  * 
  */
 class esim_controller final
-    : public core::subject,
+    : public core::publisher,
       public core::observer {
 public:
 

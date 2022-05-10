@@ -1,12 +1,12 @@
 #include "core/observer.h"
-#include "core/subject.h"
+#include "core/publisher.h"
 #include "test_helper.h"
 
 #define TEST_NAME esim_subject_observer_test
 
 class TEST_NAME : public testing::Test {
 public:
-  class subject_impl : public esim::core::subject {
+  class subject_impl : public esim::core::publisher {
   public:
     inline void notify_test(int data) noexcept {
       notify(&data);

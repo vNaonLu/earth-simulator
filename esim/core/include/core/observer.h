@@ -1,7 +1,7 @@
 #ifndef __ESIM_CORE_CORE_OBSERVER_H_
 #define __ESIM_CORE_CORE_OBSERVER_H_
 
-#include "subject.h"
+#include "publisher.h"
 #include "utils.h"
 #include <unordered_set>
 
@@ -9,28 +9,28 @@ namespace esim {
 
 namespace core {
 
-class subject;
+class publisher;
 
 /**
- * @brief A observer which can subscribe the subject item.
+ * @brief A observer which can subscribe the publisher item.
  * 
  */
 class observer {
 public:
   /**
-   * @brief Subscribe a subject class, and wait to receive the message
-   * from the subject.
+   * @brief Subscribe a publisher class, and wait to receive the message
+   * from the publisher.
    *
-   * @param subject specifies the target subject.
+   * @param publisher specifies the target publisher.
    */
-  void subscribe(rptr<class subject> subject) noexcept;
+  void subscribe(rptr<class publisher> publisher) noexcept;
 
   /**
-   * @brief Unsubscribe the subject.
+   * @brief Unsubscribe the publisher.
    * 
-   * @param subject specifies the target subject.
+   * @param publisher specifies the target publisher.
    */
-  void unsubscribe(rptr<class subject> subject) noexcept;
+  void unsubscribe(rptr<class publisher> publisher) noexcept;
 
   /**
    * @brief Construct a new observer object.
@@ -45,11 +45,11 @@ public:
   virtual ~observer() noexcept;
 
 private:
-  friend class subject;
+  friend class publisher;
   virtual void update(rptr<void> msg) noexcept = 0;
 
 private:
-  std::unordered_set<rptr<subject>> followed_;
+  std::unordered_set<rptr<publisher>> followed_;
 };
 
 } // namespace details

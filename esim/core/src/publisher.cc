@@ -1,28 +1,28 @@
 #include "core/observer.h"
-#include "core/subject.h"
+#include "core/publisher.h"
 
 namespace esim {
 
 namespace core {
 
-void subject::notify(rptr<void> msg) noexcept {
+void publisher::notify(rptr<void> msg) noexcept {
   for (auto &observer : followers_) {
     observer->update(msg);
   }
 }
 
-void subject::_register(rptr<class observer> follower) noexcept {
+void publisher::_register(rptr<class observer> follower) noexcept {
   followers_.insert(follower);
 }
 
-void subject::_unregister(rptr<class observer> follower) noexcept {
+void publisher::_unregister(rptr<class observer> follower) noexcept {
   followers_.erase(follower);
 }
 
-subject::subject() noexcept {
+publisher::publisher() noexcept {
 }
 
-subject::~subject() noexcept {
+publisher::~publisher() noexcept {
   for (auto &observer : followers_) {
     observer->unsubscribe(this);
   }

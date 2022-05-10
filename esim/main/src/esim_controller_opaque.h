@@ -3,8 +3,8 @@
 
 #include "core/fifo.h"
 #include "core/transform.h"
+#include "details/camera.h"
 #include "esim/esim_controller.h"
-#include "scene/camera.h"
 #include <atomic>
 #include <functional>
 #include <thread>

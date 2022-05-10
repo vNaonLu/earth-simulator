@@ -1,4 +1,0 @@
-#ifndef __ESIM_MAIN_ESIM_ESIM_ENGINE_H_
-#define __ESIM_MAIN_ESIM_ESIM_ENGINE_H_
-
-#endif

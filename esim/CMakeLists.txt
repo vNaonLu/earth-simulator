@@ -28,3 +28,12 @@ target_link_libraries(
 # file(GLOB ${ESIM_ASSETS} ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 # file(COPY ${ESIM_ASSETS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)
 message(VERBOSE "move ${CMAKE_CURRENT_SOURCE_DIR}/assets to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+
+
+add_executable(
+  ${PROJECT_NAME}_r
+  ${CMAKE_CURRENT_SOURCE_DIR}/esim_refactor.cc)
+
+target_link_libraries(
+  ${PROJECT_NAME}_r
+  PRIVATE ${PROJECT_NAME}::main)

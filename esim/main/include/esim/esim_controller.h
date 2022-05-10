@@ -4,8 +4,9 @@
 #include "core/observer.h"
 #include "core/publisher.h"
 #include "core/utils.h"
-#include "protocol.h"
-#include "scene/information.h"
+#include "details/information.h"
+#include "details/protocol.h"
+#include <cassert>
 
 namespace esim {
 
@@ -13,13 +14,12 @@ namespace esim {
  * @brief Earth controller managering the mouse and keyboard input
  * 
  */
-class esim_controller final
-    : public core::publisher,
-      public core::observer {
+class esim_controller final : public core::publisher,
+                              public core::observer {
 public:
 
   /**
-   * @brief Start the event handling.
+   * @brief Start a thread to handle the events.
    * 
    */
   bool start() noexcept;

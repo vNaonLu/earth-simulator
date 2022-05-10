@@ -51,17 +51,3 @@ TEST_F(TEST_NAME, subscribe_multiple_observer) {
   EXPECT_EQ(obsv1.data, data);
   EXPECT_EQ(obsv2.data, data);
 }
-
-TEST_F(TEST_NAME, unsubscribe) {
-  auto rng = esim_test::gen_testcase();
-  subject_impl subj;
-  observer_impl obsv;
-  int data = esim_test::random(rng, 1, 10000);
-
-  obsv.subscribe(&subj);
-  obsv.data = 0;
-  obsv.unsubscribe(&subj);
-
-  subj.notify_test(data);
-  EXPECT_NE(obsv.data, data);
-}

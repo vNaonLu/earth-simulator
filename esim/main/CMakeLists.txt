@@ -1,6 +1,7 @@
 add_library(
   ${PROJECT_NAME}_main
-  STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/esim_controller.cc)
+  STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/esim_controller.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/esim_engine.cc)
 
 target_include_directories(
   ${PROJECT_NAME}_main
@@ -9,5 +10,7 @@ target_include_directories(
 target_link_libraries(
   ${PROJECT_NAME}_main
   PUBLIC ${PROJECT_NAME}::core
-         vendor::glad
-         vendor::glm)
+          vendor::glfw
+          vendor::glad
+          vendor::glm
+          opengl32)

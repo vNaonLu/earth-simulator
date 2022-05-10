@@ -3,17 +3,17 @@
 
 namespace esim {
 
-inline bool esim_controller::start() noexcept {
+bool esim_controller::start() noexcept {
   assert(nullptr != opaque_);
   return opaque_->start();
 }
 
-inline void esim_controller::stop() noexcept {
+void esim_controller::stop() noexcept {
   assert(nullptr != opaque_);
   opaque_->stop();
 }
 
-inline void esim_controller::update_viewport(int width, int height) noexcept {
+void esim_controller::update_viewport(int width, int height) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
   ev.type = protocol::EVENT_ZOOM;
@@ -21,7 +21,7 @@ inline void esim_controller::update_viewport(int width, int height) noexcept {
   opaque_->push_event(ev);
 }
 
-inline void esim_controller::zoom(double tick) noexcept {
+void esim_controller::zoom(double tick) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
   ev.type = protocol::EVENT_ZOOM;
@@ -29,7 +29,7 @@ inline void esim_controller::zoom(double tick) noexcept {
   opaque_->push_event(ev);
 }
 
-inline void esim_controller::key_press(protocol::keycode_type key) noexcept {
+void esim_controller::key_press(protocol::keycode_type key) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
   ev.type = protocol::EVENT_KEYPRESS;
@@ -37,7 +37,7 @@ inline void esim_controller::key_press(protocol::keycode_type key) noexcept {
   opaque_->push_event(ev);
 }
 
-inline void esim_controller::key_release(protocol::keycode_type key) noexcept {
+void esim_controller::key_release(protocol::keycode_type key) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
   ev.type = protocol::EVENT_KEYRELEASE;
@@ -45,15 +45,15 @@ inline void esim_controller::key_release(protocol::keycode_type key) noexcept {
   opaque_->push_event(ev);
 }
 
-inline esim_controller::esim_controller() noexcept
+esim_controller::esim_controller() noexcept
     : opaque_{make_uptr<opaque>([&](rptr<void> msg) { notify(msg); })} {}
 
-inline esim_controller::~esim_controller() noexcept {
+esim_controller::~esim_controller() noexcept {
   assert(nullptr != opaque_);
   opaque_->stop();
 }
 
-inline void esim_controller::update(rptr<void> msg) noexcept {
+void esim_controller::update(rptr<void> msg) noexcept {
   assert(nullptr != opaque_);
   opaque_->receive_last_frame(msg);
 }

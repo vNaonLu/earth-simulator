@@ -23,9 +23,6 @@ publisher::publisher() noexcept {
 }
 
 publisher::~publisher() noexcept {
-  for (auto &observer : followers_) {
-    observer->unsubscribe(this);
-  }
 }
 
 } // namespace details

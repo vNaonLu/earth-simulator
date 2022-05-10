@@ -1,5 +1,5 @@
-#ifndef __ESIM_ESIM_ESIM_ESIM_CONTROLLER_H_
-#define __ESIM_ESIM_ESIM_ESIM_CONTROLLER_H_
+#ifndef __ESIM_MAIN_ESIM_ESIM_CONTROLLER_H_
+#define __ESIM_MAIN_ESIM_ESIM_CONTROLLER_H_
 
 #include "core/observer.h"
 #include "core/publisher.h"

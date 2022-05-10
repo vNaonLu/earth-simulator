@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-foreach(MODULE core trans utils scene)
+foreach(MODULE core main trans utils scene)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})

@@ -37,7 +37,7 @@ inline void esim_controller::key_press(protocol::keycode_type key) noexcept {
   opaque_->push_event(ev);
 }
 
-inline void esim_controller::key_press(protocol::keycode_type key) noexcept {
+inline void esim_controller::key_release(protocol::keycode_type key) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
   ev.type = protocol::EVENT_KEYRELEASE;

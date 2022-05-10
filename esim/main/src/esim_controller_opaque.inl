@@ -134,6 +134,7 @@ inline void esim_controller::opaque::calculate_move() noexcept {
 }
 
 inline void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
+  auto &cmr = frame_info_.camera;
   switch (event.type) {
   case protocol::EVENT_ZOOM:
     event_reset();
@@ -141,7 +142,6 @@ inline void esim_controller::opaque::event_perform(const protocol::event &event)
     break;
   case protocol::EVENT_VIEWPORT:
     event_reset();
-    auto &cmr = frame_info_.camera;
     cmr.set_viewport(event.x, event.y);
     break;
   case protocol::EVENT_KEYPRESS:

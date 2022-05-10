@@ -59,7 +59,11 @@ private:
 
 private:
   /// event status
-  class scene::frame_info                    frame_info_;
+  struct esim_controller_opaque
+  {
+    /* data */
+  };
+   scene::frame_info                    frame_info_;
   double                                     zoom_tick_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 

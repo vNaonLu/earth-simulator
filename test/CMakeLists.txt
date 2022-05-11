@@ -17,7 +17,6 @@ target_link_libraries(
   ${PROJECT_NAME}_test
   PRIVATE gtest
           ${PROJECT_NAME}::core
-          ${PROJECT_NAME}::trans
           vendor::glad
           vendor::glfw
           vendor::glm)

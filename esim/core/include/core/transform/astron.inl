@@ -62,7 +62,7 @@ template <typename type>
 inline glm::vec<3, type> vec_solar_direction(double jd) noexcept {
   glm::vec<3, type> dummy;
 
-  return solar_direction(jd, dummy);
+  return vec_solar_direction(jd, dummy);
 }
 
 template <typename type>

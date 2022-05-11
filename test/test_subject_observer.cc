@@ -1,12 +1,12 @@
 #include "core/observer.h"
-#include "core/subject.h"
+#include "core/publisher.h"
 #include "test_helper.h"
 
 #define TEST_NAME esim_subject_observer_test
 
 class TEST_NAME : public testing::Test {
 public:
-  class subject_impl : public esim::core::subject {
+  class subject_impl : public esim::core::publisher {
   public:
     inline void notify_test(int data) noexcept {
       notify(&data);
@@ -50,18 +50,4 @@ TEST_F(TEST_NAME, subscribe_multiple_observer) {
   subj.notify_test(data);
   EXPECT_EQ(obsv1.data, data);
   EXPECT_EQ(obsv2.data, data);
-}
-
-TEST_F(TEST_NAME, unsubscribe) {
-  auto rng = esim_test::gen_testcase();
-  subject_impl subj;
-  observer_impl obsv;
-  int data = esim_test::random(rng, 1, 10000);
-
-  obsv.subscribe(&subj);
-  obsv.data = 0;
-  obsv.unsubscribe(&subj);
-
-  subj.notify_test(data);
-  EXPECT_NE(obsv.data, data);
 }

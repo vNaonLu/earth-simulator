@@ -16,19 +16,19 @@ class observer;
  * notify the observer class.
  *
  */
-class subject {
+class publisher {
 public:
   /**
-   * @brief Construct a new subject object.
+   * @brief Construct a new publisher object.
    * 
    */
-  subject() noexcept;
+  publisher() noexcept;
 
   /**
-   * @brief Destroy the subject object
+   * @brief Destroy the publisher object
    * 
    */
-  virtual ~subject() noexcept;
+  virtual ~publisher() noexcept;
 
 protected:
   /**

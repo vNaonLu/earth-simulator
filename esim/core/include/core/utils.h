@@ -34,6 +34,17 @@ inline static sptr<type> make_sptr(arg_types&&... args) noexcept {
   return std::make_shared<type>(std::forward<arg_types>(args)...);
 }
 
+inline uint32_t ceil2_32(uint32_t val) noexcept {
+  --val;
+  val |= val >> 1;
+  val |= val >> 2;
+  val |= val >> 4;
+  val |= val >> 8;
+  val |= val >> 16;
+  ++val;
+  return val;
+}
+
 inline namespace enums {
 
 template <typename type,
@@ -42,7 +53,7 @@ using raw = std::underlying_type_t<type>;
 
 template <typename type,
           std::enable_if_t<std::is_enum_v<type>, bool> = true>
-inline static raw<type> to_raw(type &&enm) noexcept {
+inline constexpr static raw<type> to_raw(type &&enm) noexcept {
 
   return static_cast<raw<type>>(std::forward<type>(enm));
 }

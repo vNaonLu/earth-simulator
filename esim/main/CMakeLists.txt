@@ -7,6 +7,7 @@ add_library(
          ${ESIM_SOURCE_DIR}/esim_engine.cc
          ${ESIM_SOURCE_DIR}/esim_engine_opaque.cc
          ${ESIM_SOURCE_DIR}/esim_render_pipe.cc
+         ${ESIM_SOURCE_DIR}/scene/impl/stellar.cc
          ${ESIM_SOURCE_DIR}/scene/impl/surface_tile.cc
          ${ESIM_SOURCE_DIR}/scene/impl/surface_collections.cc
          ${ESIM_SOURCE_DIR}/scene/impl/atmosphere.cc

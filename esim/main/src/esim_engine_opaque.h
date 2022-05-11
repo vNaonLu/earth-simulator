@@ -7,6 +7,7 @@
 #include "esim_render_pipe.h"
 #include "scene/atmosphere.h"
 #include "scene/skysphere.h"
+#include "scene/stellar.h"
 #include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
@@ -64,6 +65,7 @@ private:
   uptr<esim_render_pipe>          pipeline_;
 
   /// render entities
+  uptr<scene::stellar>            sun_entity_;
   uptr<scene::skysphere>          skysphere_entity_;
   uptr<scene::surface_collection> surface_entity_;
   uptr<scene::atmosphere>         atmosphere_entity_;

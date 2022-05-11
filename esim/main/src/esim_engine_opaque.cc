@@ -71,6 +71,7 @@ bool esim_engine::opaque::poll_events() noexcept {
 esim_engine::opaque::opaque() noexcept
     : state_{0}, frame_info_queue_{512},
       pipeline_{make_uptr<esim_render_pipe>(20)},
+      sun_entity_{make_uptr<scene::stellar>()},
       skysphere_entity_{make_uptr<scene::skysphere>()},
       surface_entity_{make_uptr<scene::surface_collection>(33)},
       atmosphere_entity_{make_uptr<scene::atmosphere>()} {
@@ -113,8 +114,13 @@ void esim_engine::opaque::prepare_normal_render_pipeline() noexcept {
   pipeline_->push_render_entity(skysphere_entity_.get());
   pipeline_->push_render_event(
       []([[maybe_unused]] const scene::frame_info &info) {
-        glDepthMask(GL_TRUE);
         glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+      });
+  pipeline_->push_render_entity(sun_entity_.get());
+  pipeline_->push_render_event(
+      []([[maybe_unused]] const scene::frame_info &info) {
+        glDepthMask(GL_TRUE);
       });
   pipeline_->push_render_entity(surface_entity_.get());
   pipeline_->push_render_entity(atmosphere_entity_.get());

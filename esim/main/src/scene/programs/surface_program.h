@@ -62,7 +62,7 @@ inline void surface_program::enable_normal_pointer() const noexcept {
 
 inline void surface_program::enable_texcoord_pointer() const noexcept {
   glEnableVertexAttribArray(location_texcoord_);
-  glVertexAttribPointer(location_texcoord_, 3, GL_FLOAT, GL_FALSE,
+  glVertexAttribPointer(location_texcoord_, 2, GL_FLOAT, GL_FALSE,
                         sizeof(vertex_type),
                         (void *)(sizeof(vertex_type::pos) + sizeof(vertex_type::normal)));
 }

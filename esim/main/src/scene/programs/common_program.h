@@ -40,7 +40,7 @@ protected:
   using program::attribute_location;
   using program::uniform_location;
 
-private:
+protected:
   GLint      location_camera_, location_sun_dir_,
              location_invwave_, location_oradius_, location_iradius_,
              location_krsun_, location_kmsun_, location_kr4pi_, location_km4pi_,

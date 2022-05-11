@@ -7,13 +7,6 @@ namespace scene {
 
 void atmosphere::render(const frame_info &info) noexcept {
   using namespace glm;
-  glEnable(GL_CULL_FACE);
-  glEnable(GL_BLEND);
-  glFrontFace(GL_CW);
-  // glBlendFunc(GL_ONE, GL_ONE);
-  glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
   auto &cmr = info.camera;
   auto program = program::atmosphere_program::get();
   program->use();

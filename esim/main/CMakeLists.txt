@@ -9,7 +9,8 @@ add_library(
          ${ESIM_SOURCE_DIR}/esim_render_pipe.cc
          ${ESIM_SOURCE_DIR}/scene/impl/surface_tile.cc
          ${ESIM_SOURCE_DIR}/scene/impl/surface_collections.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/atmosphere.cc)
+         ${ESIM_SOURCE_DIR}/scene/impl/atmosphere.cc
+         ${ESIM_SOURCE_DIR}/scene/impl/skysphere.cc)
 
 target_include_directories(
   ${PROJECT_NAME}_main

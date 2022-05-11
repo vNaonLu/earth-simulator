@@ -71,17 +71,11 @@ bool esim_engine::opaque::poll_events() noexcept {
 esim_engine::opaque::opaque() noexcept
     : state_{0}, frame_info_queue_{512},
       pipeline_{make_uptr<esim_render_pipe>(20)},
-      surface_entity_ {make_uptr<scene::surface_collection>(33)},
+      skysphere_entity_{make_uptr<scene::skysphere>()},
+      surface_entity_{make_uptr<scene::surface_collection>(33)},
       atmosphere_entity_{make_uptr<scene::atmosphere>()} {
-  pipeline_->push_render_event([](const scene::frame_info &info) {
-    auto vp = info.camera.viewport();
-    glViewport(0, 0, vp.x, vp.y);
-    glEnable(GL_MULTISAMPLE);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  });
-  pipeline_->push_render_entity(surface_entity_.get());
-  pipeline_->push_render_entity(atmosphere_entity_.get());
 
+  prepare_normal_render_pipeline();
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 }
 
@@ -96,6 +90,34 @@ enums::raw<esim_engine::opaque::status>
 esim_engine::opaque::state(std::memory_order mo) const noexcept {
 
   return state_.load(mo);
+}
+
+void esim_engine::opaque::prepare_normal_render_pipeline() noexcept {
+  pipeline_->push_render_event(
+      [](const scene::frame_info &info) {
+        auto vp = info.camera.viewport();
+        glViewport(0, 0, vp.x, vp.y);
+        glEnable(GL_MULTISAMPLE);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
+      });
+  pipeline_->push_render_entity(skysphere_entity_.get());
+  pipeline_->push_render_event(
+      []([[maybe_unused]] const scene::frame_info &info) {
+        glDepthMask(GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+      });
+  pipeline_->push_render_entity(surface_entity_.get());
+  pipeline_->push_render_entity(atmosphere_entity_.get());
 }
 
 } // namespace esim

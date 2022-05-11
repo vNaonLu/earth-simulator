@@ -47,7 +47,7 @@ inline bool program::link_shaders(shader_type &&sdr, shaders_type &&...sdrs) noe
     return false;
   }
 
-  return false;
+  return true;
 }
 
 template <typename curr_sd, typename next_sd, typename... remains>

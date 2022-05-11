@@ -42,7 +42,6 @@ public:
 private:
   enums::raw<state> status(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
-
   void redraw_event() noexcept;
 
   void event_reset() noexcept;
@@ -58,12 +57,7 @@ private:
   void event_handler() noexcept;
 
 private:
-  /// event status
-  struct esim_controller_opaque
-  {
-    /* data */
-  };
-   scene::frame_info                    frame_info_;
+  scene::frame_info                          frame_info_;
   double                                     zoom_tick_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 
@@ -74,7 +68,5 @@ private:
 };
 
 } // namespace esim
-
-#include "esim_controller_opaque.inl"
 
 #endif

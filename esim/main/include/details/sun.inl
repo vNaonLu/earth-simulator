@@ -51,7 +51,7 @@ inline float sun::visual_pixel_size_of_sun(const camera &cmr) noexcept {
   dvec4 orgin_ndc = proj * view * dvec4(0.0f, 0.0f, AU, 1.0f);
   dvec4 top_ndc = proj * view * dvec4(0.0f, radius(), AU, 1.0f);
 
-  return max(0.001f, static_cast<float>(abs(top_ndc.y - orgin_ndc.y) / orgin_ndc.w));
+  return max(0.1f, static_cast<float>(abs(top_ndc.y - orgin_ndc.y) / orgin_ndc.w));
 }
 
 inline constexpr double sun::radius() noexcept {

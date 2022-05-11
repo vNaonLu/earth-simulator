@@ -4,6 +4,11 @@
 #include "core/fifo.h"
 #include "core/utils.h"
 #include "esim/esim_engine.h"
+#include "esim_render_pipe.h"
+#include "scene/atmosphere.h"
+#include "scene/skysphere.h"
+#include "scene/stellar.h"
+#include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
 #include <thread>
@@ -51,14 +56,21 @@ public:
 private:
   enums::raw<status> state(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
+  void prepare_normal_render_pipeline() noexcept;
+
 private:
   std::atomic<enums::raw<status>> state_;
-  core::fifo<scene::frame_info>  frame_info_queue_;
-  scene::frame_info              frame_info_;
+  core::fifo<scene::frame_info>   frame_info_queue_;
+  scene::frame_info               frame_info_;
+  uptr<esim_render_pipe>          pipeline_;
+
+  /// render entities
+  uptr<scene::stellar>            sun_entity_;
+  uptr<scene::skysphere>          skysphere_entity_;
+  uptr<scene::surface_collection> surface_entity_;
+  uptr<scene::atmosphere>         atmosphere_entity_;
 };
 
 } // namespace esim
-
-#include "esim_engine_opaque.inl"
 
 #endif

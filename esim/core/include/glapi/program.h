@@ -50,9 +50,15 @@ public:
    * @brief Destroy the program object.
    * 
    */
-  ~program() noexcept;
+  virtual ~program() noexcept;
 
-protected:
+  /**
+   * @brief Link the compiled shaders.
+   * 
+   * @param sdr specifies the compiled shader.
+   * @param sdrs specifies the compiled shaders.
+   * @return ture if link successfully, false otherwise.
+   */
   template <typename shader_type, typename... shaders_type>
   bool link_shaders(shader_type &&sdr, shaders_type&&... sdrs) noexcept;
 

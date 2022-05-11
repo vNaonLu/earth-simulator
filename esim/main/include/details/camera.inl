@@ -37,7 +37,7 @@ template <typename type>
 inline glm::mat<4, 4, type> camera::translate(const glm::mat<4, 4, type> &mat,
                                               const glm::vec<3, type> offset) const noexcept {
   using namespace glm;
-  return translate(mat, offset - pos<type>());
+  return glm::translate(mat, offset - pos<type>());
 }
 
 inline glm::ivec2 camera::viewport() const noexcept {
@@ -99,6 +99,7 @@ inline void camera::reset() noexcept {
   up_ = dvec3{0.0f, 0.0f, 1.0f};
   view_ = dvec3{-1.0f, 0.0f, 0.0f};
   ecef_ = dvec3{astron::earth_major() * 3.0, 0.0f, 0.0f};
+  viewport_ = ivec2{0, 0};
   calculate_near_far();
 }
 

@@ -10,6 +10,7 @@ static void key_callback(GLFWwindow *, int, int, int, int);
 static void scroll_callback(GLFWwindow *, double, double);
 static void framebuffer_size_callback(GLFWwindow *, int, int);
 static void window_refresh_callback(GLFWwindow *);
+inline esim::protocol::keycode_type glfw_to_keycode(int) noexcept;
 
 esim::uptr<esim::esim_engine>     esim_engine;
 esim::uptr<esim::esim_controller> esim_ctrler;
@@ -51,10 +52,12 @@ int main(...) {
   esim_ctrler->subscribe(esim_engine.get());
   esim_engine->subscribe(esim_ctrler.get());
   esim_ctrler->update_viewport(width, height);
+  esim_ctrler->start();
   esim_engine->start(
       [&]() {
         glfwPollEvents();
         if (glfwWindowShouldClose(window)) {
+          esim_ctrler->stop();
           esim_engine->stop();
         }
       },
@@ -94,12 +97,33 @@ static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scanc
     std::cout << 35 << std::endl;
     esim_ctrler->stop();
   } else {
-    // if (auto keycode = esim::utils::glfw_to_keycode(key); keycode != -1) {
-    //   if (action == GLFW_PRESS) {
-    //     esim_ctrler->key_press(keycode);
-    //   } else if (action == GLFW_RELEASE) {
-    //     esim_ctrler->key_release(keycode);
-    //   }
-    // }
+    if (auto keycode = glfw_to_keycode(key); keycode != -1) {
+      if (action == GLFW_PRESS) {
+        esim_ctrler->key_press(keycode);
+      } else if (action == GLFW_RELEASE) {
+        esim_ctrler->key_release(keycode);
+      }
+    }
+  }
+}
+
+inline esim::protocol::keycode_type glfw_to_keycode(int glfw_key) noexcept {
+  switch(glfw_key) {
+  case GLFW_KEY_LEFT_CONTROL:
+    [[fallthrough]];
+  case GLFW_KEY_RIGHT_CONTROL:
+    return esim::protocol::KEY_CTRL;
+
+  case GLFW_KEY_LEFT:
+    return esim::protocol::KEY_LEFT;
+  case GLFW_KEY_UP:
+    return esim::protocol::KEY_UP;
+  case GLFW_KEY_RIGHT:
+    return esim::protocol::KEY_RIGHT;
+  case GLFW_KEY_DOWN:
+    return esim::protocol::KEY_DOWN;
+
+  default:
+    return esim::protocol::KEY_NONE;
   }
 }

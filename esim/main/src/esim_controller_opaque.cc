@@ -1,21 +1,23 @@
+#include "esim_controller_opaque.h"
+
 namespace esim {
 
-inline bool esim_controller::opaque::is_working() const noexcept {
+bool esim_controller::opaque::is_working() const noexcept {
   using namespace enums;
   return status() & state::working;
 }
 
-inline bool esim_controller::opaque::is_pause() const noexcept {
+bool esim_controller::opaque::is_pause() const noexcept {
   using namespace enums;
   return status() & state::pause;
 }
 
-inline bool esim_controller::opaque::is_terminated() const noexcept {
+bool esim_controller::opaque::is_terminated() const noexcept {
   using namespace enums;
   return status() & state::terminated;
 }
 
-inline bool esim_controller::opaque::start() noexcept {
+bool esim_controller::opaque::start() noexcept {
   if (is_working() || is_terminated()) {
 
     return false;
@@ -26,7 +28,7 @@ inline bool esim_controller::opaque::start() noexcept {
   return true;
 }
 
-inline void esim_controller::opaque::stop() noexcept {
+void esim_controller::opaque::stop() noexcept {
   if (is_working()) {
     /// multiple thread may repeatly xor
     /// finally non-stop
@@ -34,11 +36,11 @@ inline void esim_controller::opaque::stop() noexcept {
   }
 }
 
-inline void esim_controller::opaque::push_event(protocol::event event) noexcept {
+void esim_controller::opaque::push_event(protocol::event event) noexcept {
   event_queue_.push(event);
 }
 
-inline esim_controller::opaque::opaque(
+esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
     : frame_info_{}, zoom_tick_{0.0f},
       info_callback_{notify_callback},
@@ -46,17 +48,17 @@ inline esim_controller::opaque::opaque(
   assert(nullptr != info_callback_);
 }
 
-inline esim_controller::opaque::~opaque() noexcept {
+esim_controller::opaque::~opaque() noexcept {
   stop();
 }
 
-inline enums::raw<esim_controller::opaque::state>
+enums::raw<esim_controller::opaque::state>
 esim_controller::opaque::status(std::memory_order mo) const noexcept {
 
   return state_.load(mo);
 }
 
-inline void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept {
+void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept {
   state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
   auto info = reinterpret_cast<rptr<scene::frame_info>>(msg);
   if (frame_info_.camera != info->camera ||
@@ -65,18 +67,18 @@ inline void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept
   }
 }
 
-inline void esim_controller::opaque::redraw_event() noexcept {
+void esim_controller::opaque::redraw_event() noexcept {
   scene::frame_info fork = frame_info_;
   info_callback_(&fork);
   state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
 }
 
-inline void esim_controller::opaque::event_reset() noexcept {
+void esim_controller::opaque::event_reset() noexcept {
   zoom_tick_ = 0.0f;
   pressed_keys_.clear();
 }
 
-inline void esim_controller::opaque::calculate_zoom() noexcept {
+void esim_controller::opaque::calculate_zoom() noexcept {
   using namespace glm;
   if (zoom_tick_ != 0.0f) {
     auto &cmr = frame_info_.camera;
@@ -93,7 +95,7 @@ inline void esim_controller::opaque::calculate_zoom() noexcept {
   }
 }
 
-inline void esim_controller::opaque::calculate_rotation() noexcept {
+void esim_controller::opaque::calculate_rotation() noexcept {
     using namespace glm;
     ivec2 move_angle_offset(0);
 
@@ -128,12 +130,12 @@ inline void esim_controller::opaque::calculate_rotation() noexcept {
     }
 }
 
-inline void esim_controller::opaque::calculate_move() noexcept {
+void esim_controller::opaque::calculate_move() noexcept {
   calculate_zoom();
   calculate_rotation();
 }
 
-inline void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
+void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
   auto &cmr = frame_info_.camera;
   switch (event.type) {
   case protocol::EVENT_ZOOM:
@@ -153,7 +155,7 @@ inline void esim_controller::opaque::event_perform(const protocol::event &event)
   }
 }
 
-inline void esim_controller::opaque::event_handler() noexcept {
+void esim_controller::opaque::event_handler() noexcept {
   static protocol::event event_msg;
   while(is_working()) {
     if (!is_pause()) {

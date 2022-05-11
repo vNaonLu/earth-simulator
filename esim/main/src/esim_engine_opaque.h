@@ -4,6 +4,7 @@
 #include "core/fifo.h"
 #include "core/utils.h"
 #include "esim/esim_engine.h"
+#include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
 #include <thread>
@@ -53,12 +54,13 @@ private:
 
 private:
   std::atomic<enums::raw<status>> state_;
-  core::fifo<scene::frame_info>  frame_info_queue_;
-  scene::frame_info              frame_info_;
+  core::fifo<scene::frame_info>   frame_info_queue_;
+  scene::frame_info               frame_info_;
+
+  /// render entities
+  uptr<scene::surface_collection> surface_entity_;
 };
 
 } // namespace esim
-
-#include "esim_engine_opaque.inl"
 
 #endif

@@ -15,6 +15,7 @@ typedef uint16_t keycode_type;
  * 
  */
 enum class keycode : keycode_type {
+  none = 0,
   ctrl = 17,
   left = 37,
   up = 38,
@@ -22,6 +23,7 @@ enum class keycode : keycode_type {
   down = 40
 };
 
+inline constexpr static keycode_type KEY_NONE  = enums::to_raw(keycode::none);
 inline constexpr static keycode_type KEY_CTRL  = enums::to_raw(keycode::ctrl);
 inline constexpr static keycode_type KEY_LEFT  = enums::to_raw(keycode::left);
 inline constexpr static keycode_type KEY_UP    = enums::to_raw(keycode::up);

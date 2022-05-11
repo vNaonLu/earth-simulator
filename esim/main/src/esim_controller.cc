@@ -16,7 +16,7 @@ void esim_controller::stop() noexcept {
 void esim_controller::update_viewport(int width, int height) noexcept {
   assert(nullptr != opaque_);
   protocol::event ev;
-  ev.type = protocol::EVENT_ZOOM;
+  ev.type = protocol::EVENT_VIEWPORT;
   ev.x = width; ev.y = height;
   opaque_->push_event(ev);
 }

@@ -10,7 +10,46 @@ scene::frame_info esim_engine::opaque::frame_info() const noexcept {
 
 void esim_engine::opaque::render() noexcept {
   using namespace glm;
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  /// draw as usual
+  glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);
   pipeline_->render(frame_info_);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  /// blur scene
+  auto blur_prog = program::blur_program::get();
+  bool first = true;
+  uint32_t horizontal = 1;
+  blur_prog->use();
+  quad_vbo_.bind();
+  blur_prog->enable_position_pointer();
+  for (uint32_t i = 0; i < 8; ++i) {
+    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos_[horizontal]);
+    blur_prog->update_horizontal_uniform(horizontal);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, first ? color_buffers_[1] : pingpong_buffers_[horizontal ^ 1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    horizontal ^= 1;
+    first = false;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  /// blend
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  auto blend_prog = program::blend_program::get();
+  blend_prog->use();
+  quad_vbo_.bind();
+  blend_prog->enable_position_pointer();
+  blend_prog->update_exposure_uniform(1.0f);
+  blend_prog->update_gamma_uniform(2.2f);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, pingpong_buffers_[horizontal ^ 1]);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+  ESIM_GL_TRACE();
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -74,7 +113,55 @@ esim_engine::opaque::opaque() noexcept
       sun_entity_{make_uptr<scene::stellar>()},
       skysphere_entity_{make_uptr<scene::skysphere>()},
       surface_entity_{make_uptr<scene::surface_collection>(33)},
-      atmosphere_entity_{make_uptr<scene::atmosphere>()} {
+      atmosphere_entity_{make_uptr<scene::atmosphere>()},
+      color_buffers_(2), pingpong_fbos_(2), pingpong_buffers_(2),
+      quad_vbo_{GL_ARRAY_BUFFER} {
+  using namespace glm;
+
+  glGenFramebuffers(1, &hdr_fbo_);
+  glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);
+  glGenRenderbuffers(1, &rbo_depth_);
+  glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth_);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1080, 1080);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  glGenTextures(2, color_buffers_.data());
+  for (GLuint i = 0; i < 2; ++i) {
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1080, 1080, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_buffers_[i], 0);
+  }
+  GLuint attachments[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+  glDrawBuffers(2, attachments);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth_);
+  assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  /// PINGPONG
+  glGenFramebuffers(2, pingpong_fbos_.data());
+  glGenTextures(2, pingpong_buffers_.data());
+  for (GLuint i = 0; i < 2; ++i) {
+    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos_[i]);
+    glBindTexture(GL_TEXTURE_2D, pingpong_buffers_[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 1080, 1080, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_buffers_[i], 0);
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  quad_vbo_.bind_buffer(std::vector<details::blur_pos>{details::blur_pos{{-1.0,  1.0}},
+                                                       details::blur_pos{{-1.0, -1.0}},
+                                                       details::blur_pos{{ 1.0,  1.0}},
+                                                       details::blur_pos{{ 1.0, -1.0}}});
 
   prepare_normal_render_pipeline();
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);

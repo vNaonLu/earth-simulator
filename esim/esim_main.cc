@@ -28,6 +28,7 @@ int main(...) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   int width = 1080,
       height = 1080;
   window = glfwCreateWindow(width, height, "Earth Simulator", NULL, NULL);

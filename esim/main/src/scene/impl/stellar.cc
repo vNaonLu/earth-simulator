@@ -22,7 +22,7 @@ void stellar::render(const frame_info &info) noexcept {
   program->update_view_uniform(cmr.view<float>());
   program->update_model_uniform(m);
   program->update_pixel_size_uniform(10.0f);
-  program->update_solar_color_uniform(vec4{1.0f, 1.0f, 1.0f, 1.0f});
+  program->update_solar_color_uniform(vec4{10.0f, 99.0f, 99.0f, 1.0f});
   glDrawArrays(GL_TRIANGLE_FAN, 1, static_cast<GLsizei>(vbo_.size() - 1));
 }
 

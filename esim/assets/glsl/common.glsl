@@ -272,7 +272,7 @@ void ONAS_CalcColorsForGroundOutside(out vec3 out_groundCol, out vec3 out_attenu
 //==================================================================
 // calculate the diffuse
 void CalcDiffuse(out vec3 out_diffuse, vec3 normal) {
-  float diff = max(dot(normalize(normal), -1 * u_LightDir), 0.0);
+  float diff = max(dot(normalize(normal), -u_LightDir), 0.0);
 
   out_diffuse = diff * vec3(1.0);
 }
@@ -293,4 +293,15 @@ void CalcLightScale(out vec3 out_lightScale, vec3 normal) {
   CalcAmbient(ambient);
 
   out_lightScale =  ambient + diffuse;
+}
+
+//==================================================================
+// calculate brightness
+void CalcBrightness(out vec4 out_color, vec4 color) {
+  float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+  if (brightness > 1.0) {
+    out_color = vec4(color.rgb, 1.0);
+  } else {
+    out_color = vec4(0.0, 0.0, 0.0, 1.0);
+  }
 }

@@ -1,7 +1,9 @@
 #version 460
 precision highp float;
 
-uniform vec3 u_LightDir;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+
 uniform sampler2D u_BaseMap;
 
 in vec3 v_Normal;
@@ -11,6 +13,8 @@ in vec3 v_Attenuation;
 
 void CalcLightScale(out vec3 out_lightScale, vec3 normal);
 
+void CalcBrightness(out vec4 out_color, vec4 color);
+
 void main() {
   vec3 base_color, light_scale;
   CalcLightScale(light_scale, v_Normal);
@@ -18,6 +22,7 @@ void main() {
   base_color = light_scale * texture2D(u_BaseMap, v_TexCoord).xyz;
   base_color = v_GroundColor + base_color * v_Attenuation;
 
-  gl_FragColor.rgb = base_color;
-  gl_FragColor.a = 1.0;
+  FragColor.rgb = base_color;
+  FragColor.a = 1.0;
+  CalcBrightness(BrightColor, vec4(base_color, 1.0));
 }

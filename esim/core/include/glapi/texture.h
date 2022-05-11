@@ -21,8 +21,9 @@ public:
    * @brief Bind the texture with specified index.
    * 
    * @param idx specifies the index of texture.
+   * @param location specifies the location to bind.
    */
-  void bind(size_t idx = 0) const noexcept;
+  void bind(size_t idx = 0, GLuint location = 0) const noexcept;
 
   /**
    * @brief Load a texture from a local image.

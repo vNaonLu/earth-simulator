@@ -1,6 +1,9 @@
 #version 460
 precision highp float;
 
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
+
 const float Brightness = 1.0f;
 const float Contrast = 1.5f;
 const vec4  AverageLuminance = vec4(vec3(2.0f), 1.0f);
@@ -25,6 +28,7 @@ void main() {
    * You can pass in (0.5, 0.5, 0.5, 1.0) for AverageLuminance for a quick-and-dirty grey value,
    * but better results will be obtained by calculating a proper average luminance for your texture.
    */
-  gl_FragColor = mix(space_color * Brightness,  mix(AverageLuminance, space_color, Contrast), 0.5);
-  gl_FragColor.a = 1.0;
+  FragColor = mix(space_color * Brightness,  mix(AverageLuminance, space_color, Contrast), 0.5);
+  FragColor.a = 1.0;
+  BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

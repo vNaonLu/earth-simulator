@@ -82,7 +82,7 @@ void surface_tile_helper::confirm() noexcept {
       auto downright = computing_[to_index(i + 1, j + 1)].pos - curr.pos;
       auto right = computing_[to_index(i + 1, j)].pos - curr.pos;
       auto upright = computing_[to_index(i + 1, j - 1)].pos - curr.pos;
-      curr.normal = cross(up, upleft);
+      curr.normal  = cross(up, upleft);
       curr.normal += cross(upleft, left);
       curr.normal += cross(left, downleft);
       curr.normal += cross(downleft, down);

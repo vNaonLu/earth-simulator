@@ -5,13 +5,17 @@
 #include "core/utils.h"
 #include "esim/esim_engine.h"
 #include "esim_render_pipe.h"
+#include "glapi/buffer.h"
 #include "scene/atmosphere.h"
 #include "scene/skysphere.h"
 #include "scene/stellar.h"
 #include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
+#include <scene/programs/blend_program.h>
+#include <scene/programs/blur_program.h>
 #include <thread>
+#include <vector>
 
 namespace esim {
 
@@ -69,6 +73,13 @@ private:
   uptr<scene::skysphere>          skysphere_entity_;
   uptr<scene::surface_collection> surface_entity_;
   uptr<scene::atmosphere>         atmosphere_entity_;
+
+  ///frame buffer
+  GLuint              hdr_fbo_, rbo_depth_;
+  std::vector<GLuint> color_buffers_;
+  std::vector<GLuint> pingpong_fbos_;
+  std::vector<GLuint> pingpong_buffers_;
+  gl::buffer<esim::details::blur_pos> quad_vbo_; 
 };
 
 } // namespace esim

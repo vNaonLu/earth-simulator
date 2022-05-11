@@ -2,8 +2,9 @@ namespace esim {
 
 namespace gl {
 
-inline void texture::bind(size_t idx) const noexcept {
+inline void texture::bind(size_t idx, GLuint location) const noexcept {
   assert(idx < ids_.size());
+  glActiveTexture(GL_TEXTURE0 + location);
   glBindTexture(GL_TEXTURE_2D, ids_[idx]);
 }
 

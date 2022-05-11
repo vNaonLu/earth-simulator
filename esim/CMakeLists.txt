@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-foreach(MODULE trans utils scene)
+foreach(MODULE core main)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})
@@ -16,13 +16,7 @@ add_executable(
 
 target_link_libraries(
   ${PROJECT_NAME}
-  PRIVATE ${PROJECT_NAME}::utils
-          ${PROJECT_NAME}::trans
-          ${PROJECT_NAME}::scene
-          vendor::glfw
-          vendor::glad
-          vendor::glm
-          opengl32)
+  PRIVATE ${PROJECT_NAME}::main)
 
 # file(GLOB ${ESIM_ASSETS} ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 # file(COPY ${ESIM_ASSETS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets)

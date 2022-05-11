@@ -19,7 +19,7 @@ void main() {
 
   vec3 outCol = v_RayleighCol + miePhase * v_MieCol;
 
-  gl_FragColor = vec4(outCol, 0.9);
+  gl_FragColor = vec4(outCol, 0.8);
 }
 
 // void main (void)

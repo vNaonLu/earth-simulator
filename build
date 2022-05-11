@@ -7,3 +7,5 @@ cmake --build $BDIR || exit
 $BDIR/debug/esim_test.exe || exit
 
 cp -r esim/assets/* $BDIR/debug/
+
+cp -r esim/assets $BDIR/debug/

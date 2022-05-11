@@ -9,12 +9,14 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
   ${PROJECT_NAME}_test 
   ${CMAKE_CURRENT_SOURCE_DIR}/main.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/transform.cc)
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_subject_observer.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_transform.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_fifo.cc)
 
 target_link_libraries(
   ${PROJECT_NAME}_test
   PRIVATE gtest
-          ${PROJECT_NAME}::trans
+          ${PROJECT_NAME}::core
           vendor::glad
           vendor::glfw
           vendor::glm)

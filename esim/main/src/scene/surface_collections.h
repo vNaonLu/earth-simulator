@@ -12,7 +12,7 @@ namespace esim {
 
 namespace scene {
 
-class surface_collection final : public scene_entiy {
+class surface_collection final : public scene_entity {
 public:
   void render(const scene::frame_info &info) noexcept final;
 

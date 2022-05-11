@@ -9,23 +9,12 @@ scene::frame_info esim_engine::opaque::frame_info() const noexcept {
 }
 
 void esim_engine::opaque::render() noexcept {
-  auto &cmr = frame_info_.camera;
-  auto viewport = cmr.viewport();
-  glEnable(GL_MULTISAMPLE);
-  glViewport(0, 0, viewport.x, viewport.y);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  using namespace glm;
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glEnable(GL_DEPTH_TEST);
-  glDepthMask(GL_TRUE);
-  glDepthFunc(GL_LEQUAL);
-
-  glEnable(GL_CULL_FACE);
-  glFrontFace(GL_CCW);
-
-  surface_entity_->render(frame_info_);
+  pipeline_->initialize_frame(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+                              vec4{0.0f}, true);
+  pipeline_->push_entity(surface_entity_.get());
+  pipeline_->render(frame_info_);
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -84,7 +73,8 @@ bool esim_engine::opaque::poll_events() noexcept {
 }
 
 esim_engine::opaque::opaque() noexcept
-    : state_{0}, frame_info_queue_{512} {
+    : state_{0}, frame_info_queue_{512},
+      pipeline_{make_uptr<esim_render_pipe>(20)} {
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 
   surface_entity_ = make_uptr<scene::surface_collection>(33);

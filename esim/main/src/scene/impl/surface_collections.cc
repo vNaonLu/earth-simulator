@@ -5,6 +5,12 @@ namespace esim {
 namespace scene {
 
 void surface_collection::render(const scene::frame_info &info) noexcept {
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE);
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_CULL_FACE);
+  glFrontFace(GL_CCW);
+
   auto program = program::surface_program::get();
   program->use();
   ebo_.bind(0);
@@ -15,15 +21,15 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
 }
 
 void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame_info &info) noexcept {
-    // using namespace glm;
-    // auto program = bounding_box_program::get();
-    // ibo_.bind(1);
-    // program->use();
-    // program->bind_view_uniform(info.camera.view());
-    // program->bind_proj_uniform(info.camera.projection());
-    // for (auto &node : drawings) {
-    //   node->draw_bounding_box(info, ibo_.size(1));
-    // }
+  // using namespace glm;
+  // auto program = bounding_box_program::get();
+  // ibo_.bind(1);
+  // program->use();
+  // program->bind_view_uniform(info.camera.view());
+  // program->bind_proj_uniform(info.camera.projection());
+  // for (auto &node : drawings) {
+  //   node->draw_bounding_box(info, ibo_.size(1));
+  // }
 }
 
 surface_collection::surface_collection(size_t vertex_details) noexcept

@@ -4,6 +4,7 @@
 #include "core/fifo.h"
 #include "core/utils.h"
 #include "esim/esim_engine.h"
+#include "esim_render_pipe.h"
 #include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
@@ -56,6 +57,7 @@ private:
   std::atomic<enums::raw<status>> state_;
   core::fifo<scene::frame_info>   frame_info_queue_;
   scene::frame_info               frame_info_;
+  uptr<esim_render_pipe>          pipeline_;
 
   /// render entities
   uptr<scene::surface_collection> surface_entity_;

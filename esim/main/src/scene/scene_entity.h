@@ -8,7 +8,7 @@ namespace esim {
 
 namespace scene {
 
-class scene_entiy {
+class scene_entity {
 public:
   virtual void render(const frame_info &info) noexcept = 0;
 };

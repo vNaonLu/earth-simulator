@@ -5,6 +5,7 @@
 #include "core/utils.h"
 #include "esim/esim_engine.h"
 #include "esim_render_pipe.h"
+#include "scene/atmosphere.h"
 #include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
@@ -61,6 +62,7 @@ private:
 
   /// render entities
   uptr<scene::surface_collection> surface_entity_;
+  uptr<scene::atmosphere> atmosphere_entity_;
 };
 
 } // namespace esim

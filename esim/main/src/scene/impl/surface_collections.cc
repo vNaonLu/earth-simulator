@@ -6,9 +6,10 @@ namespace scene {
 
 void surface_collection::render(const scene::frame_info &info) noexcept {
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_BLEND);
   glDepthMask(GL_TRUE);
   glDepthFunc(GL_LEQUAL);
-  glEnable(GL_CULL_FACE);
   glFrontFace(GL_CCW);
 
   auto program = program::surface_program::get();

@@ -71,7 +71,8 @@ bool esim_engine::opaque::poll_events() noexcept {
 esim_engine::opaque::opaque() noexcept
     : state_{0}, frame_info_queue_{512},
       pipeline_{make_uptr<esim_render_pipe>(20)},
-      surface_entity_ {make_uptr<scene::surface_collection>(33)} {
+      surface_entity_ {make_uptr<scene::surface_collection>(33)},
+      atmosphere_entity_{make_uptr<scene::atmosphere>()} {
   pipeline_->push_render_event([](const scene::frame_info &info) {
     auto vp = info.camera.viewport();
     glViewport(0, 0, vp.x, vp.y);
@@ -79,6 +80,7 @@ esim_engine::opaque::opaque() noexcept
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   });
   pipeline_->push_render_entity(surface_entity_.get());
+  pipeline_->push_render_entity(atmosphere_entity_.get());
 
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 }

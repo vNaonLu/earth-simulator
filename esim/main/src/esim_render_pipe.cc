@@ -3,50 +3,27 @@
 
 namespace esim {
 
-namespace details {
-
-struct frame_initializer : public scene::scene_entity {
-  bool       enable_multisample;
-  glm::vec4  clear_color;
-  GLbitfield clear_mask;
-
-  void render(const scene::frame_info &info) noexcept final {
-    if (enable_multisample) {
-      glEnable(GL_MULTISAMPLE);
-    }
-    auto vp = info.camera.viewport(); 
-    glViewport(0, 0, vp.x, vp.y);
-    glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-    glClear(clear_mask);
-  }
-};
-
-} // namespace details
-
+void esim_render_pipe::clear() noexcept {
+  head_ = 0;
+}
 
 void esim_render_pipe::render(const scene::frame_info &info) noexcept {
   auto it = pipeline_.begin(),
        end = pipeline_.begin() + head_;
   while (it != end) {
-    (*it++)->render(info);
+    (*it++)(info);
   }
-
-  head_ = 0;
 }
 
-void esim_render_pipe::push_entity(rptr<scene::scene_entity> entity) noexcept {
+void esim_render_pipe::push_render_event(render_func func) noexcept {
   assert(head_ < pipeline_.size());
-  pipeline_[head_++] = entity;
+  pipeline_[head_++] = func;
 }
 
-void esim_render_pipe::initialize_frame(GLbitfield clear_mask, glm::vec4 clear_color,
-                                        bool enable_multisample) noexcept {
-  static struct details::frame_initializer frame_initializer;
+void esim_render_pipe::push_render_entity(rptr<scene::scene_entity> entity) noexcept {
   assert(head_ < pipeline_.size());
-  frame_initializer.clear_mask = clear_mask;
-  frame_initializer.clear_color = clear_color;
-  frame_initializer.enable_multisample = enable_multisample;
-  pipeline_[head_++] = &frame_initializer;
+  pipeline_[head_++] = std::bind(&scene::scene_entity::render, entity,
+                                 std::placeholders::_1);
 }
 
 esim_render_pipe::esim_render_pipe(size_t reserve_stage) noexcept

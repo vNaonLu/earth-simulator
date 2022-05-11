@@ -10,10 +10,6 @@ scene::frame_info esim_engine::opaque::frame_info() const noexcept {
 
 void esim_engine::opaque::render() noexcept {
   using namespace glm;
-
-  pipeline_->initialize_frame(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
-                              vec4{0.0f}, true);
-  pipeline_->push_entity(surface_entity_.get());
   pipeline_->render(frame_info_);
 }
 
@@ -74,10 +70,17 @@ bool esim_engine::opaque::poll_events() noexcept {
 
 esim_engine::opaque::opaque() noexcept
     : state_{0}, frame_info_queue_{512},
-      pipeline_{make_uptr<esim_render_pipe>(20)} {
-  state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
+      pipeline_{make_uptr<esim_render_pipe>(20)},
+      surface_entity_ {make_uptr<scene::surface_collection>(33)} {
+  pipeline_->push_render_event([](const scene::frame_info &info) {
+    auto vp = info.camera.viewport();
+    glViewport(0, 0, vp.x, vp.y);
+    glEnable(GL_MULTISAMPLE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  });
+  pipeline_->push_render_entity(surface_entity_.get());
 
-  surface_entity_ = make_uptr<scene::surface_collection>(33);
+  state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 }
 
 esim_engine::opaque::~opaque() noexcept {

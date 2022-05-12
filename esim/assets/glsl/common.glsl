@@ -6,7 +6,9 @@
 /// Based on the GPU Gems 2 demo by Sean O'Neil (2004)
 //==================================================================
 
+uniform vec2  u_Resolution;          // The viewport resolution
 uniform vec3  u_CameraPos;           // The camera's current position
+uniform vec3  u_CameraDir;           // The camera's direction
 uniform vec3  u_LightDir;            // The direction vector to the light source
 
 uniform vec3  u_InvWavelength;       // 1 / pow(wavelength, 4) for the red, green, and blue channels
@@ -304,4 +306,14 @@ void CalcBrightness(out vec4 out_color, vec4 color) {
   } else {
     out_color = vec4(0.0, 0.0, 0.0, 1.0);
   }
+}
+
+float CalcScatter(float d) {
+  vec3 q = u_CameraPos - u_LightDir * 1000000000.0;
+  float b = dot(u_CameraDir, q);
+  float c = dot(q, q);
+  float iv = 1.0f / sqrt(c - b * b);
+  float l = iv * (atan((d + b) * iv) - atan(b * iv));
+
+  return l;
 }

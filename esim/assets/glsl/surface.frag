@@ -19,10 +19,10 @@ void main() {
   vec3 base_color, light_scale;
   CalcLightScale(light_scale, v_Normal);
 
-  base_color = light_scale * texture2D(u_BaseMap, v_TexCoord).xyz;
-  base_color = v_GroundColor + base_color * v_Attenuation;
+  base_color = v_GroundColor + v_Attenuation * texture2D(u_BaseMap, v_TexCoord).xyz;
+  base_color = light_scale * base_color;
 
   FragColor.rgb = base_color;
   FragColor.a = 1.0;
-  CalcBrightness(BrightColor, vec4(base_color, 1.0));
+  CalcBrightness(BrightColor, FragColor);
 }

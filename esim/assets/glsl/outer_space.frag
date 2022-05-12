@@ -12,6 +12,15 @@ uniform sampler2D u_BaseMap;
 
 in vec2 v_TexCoord;
 
+void CalcBrightness(out vec4 out_color, vec4 color) {
+  float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+  if (brightness > 1.0) {
+    out_color = vec4(color.rgb, 1.0);
+  } else {
+    out_color = vec4(0.0, 0.0, 0.0, 1.0);
+  }
+}
+
 void main() {
   vec4 space_color;
 
@@ -30,5 +39,5 @@ void main() {
    */
   FragColor = mix(space_color * Brightness,  mix(AverageLuminance, space_color, Contrast), 0.5);
   FragColor.a = 1.0;
-  BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
+  CalcBrightness(BrightColor, FragColor);
 }

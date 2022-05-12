@@ -15,41 +15,53 @@ void esim_engine::opaque::render() noexcept {
 
   /// draw as usual
   glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);
-  pipeline_->render(frame_info_);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  /// blur scene
-  auto blur_prog = program::blur_program::get();
-  bool first = true;
-  uint32_t horizontal = 1;
-  blur_prog->use();
-  quad_vbo_.bind();
-  blur_prog->enable_position_pointer();
-  for (uint32_t i = 0; i < 8; ++i) {
-    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos_[horizontal]);
-    blur_prog->update_horizontal_uniform(horizontal);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, first ? color_buffers_[1] : pingpong_buffers_[horizontal ^ 1]);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
-    horizontal ^= 1;
-    first = false;
-  }
+  auto vp = frame_info_.camera.viewport();
+  glViewport(0, 0, vp.x, vp.y);
+  glEnable(GL_MULTISAMPLE);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
+  glDepthFunc(GL_LEQUAL);
+
+  glEnable(GL_CULL_FACE);
+  glFrontFace(GL_CCW);
+
+  skysphere_entity_->render(frame_info_);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
+
+  sun_entity_->render(frame_info_);
+
+  glDepthMask(GL_TRUE);
+
+  surface_entity_->render(frame_info_);
+
+  atmosphere_entity_->render(frame_info_);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   /// blend
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto blend_prog = program::blend_program::get();
+  auto blend_prog = program::screen_program::get();
   blend_prog->use();
   quad_vbo_.bind();
   blend_prog->enable_position_pointer();
-  blend_prog->update_exposure_uniform(1.0f);
-  blend_prog->update_gamma_uniform(2.2f);
+  blend_prog->update_alpha_uniform(1.0f);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, pingpong_buffers_[horizontal ^ 1]);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
-  ESIM_GL_TRACE();
+
+  /// debug
+  glViewport(0, 0, 250, 250);
+  blend_prog->update_alpha_uniform(0.5f);
+  glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -114,8 +126,7 @@ esim_engine::opaque::opaque() noexcept
       skysphere_entity_{make_uptr<scene::skysphere>()},
       surface_entity_{make_uptr<scene::surface_collection>(33)},
       atmosphere_entity_{make_uptr<scene::atmosphere>()},
-      color_buffers_(2), pingpong_fbos_(2), pingpong_buffers_(2),
-      quad_vbo_{GL_ARRAY_BUFFER} {
+      color_buffers_(2), quad_vbo_{GL_ARRAY_BUFFER} {
   using namespace glm;
 
   glGenFramebuffers(1, &hdr_fbo_);
@@ -142,28 +153,12 @@ esim_engine::opaque::opaque() noexcept
   assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  /// PINGPONG
-  glGenFramebuffers(2, pingpong_fbos_.data());
-  glGenTextures(2, pingpong_buffers_.data());
-  for (GLuint i = 0; i < 2; ++i) {
-    glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos_[i]);
-    glBindTexture(GL_TEXTURE_2D, pingpong_buffers_[i]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 1080, 1080, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_buffers_[i], 0);
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  quad_vbo_.bind_buffer(std::vector<details::screen_vertex>{details::screen_vertex{{-1.0, 1.0}},
+                                                            details::screen_vertex{{-1.0, -1.0}},
+                                                            details::screen_vertex{{1.0, 1.0}},
+                                                            details::screen_vertex{{1.0, -1.0}}});
 
-  quad_vbo_.bind_buffer(std::vector<details::blur_pos>{details::blur_pos{{-1.0,  1.0}},
-                                                       details::blur_pos{{-1.0, -1.0}},
-                                                       details::blur_pos{{ 1.0,  1.0}},
-                                                       details::blur_pos{{ 1.0, -1.0}}});
-
-  prepare_normal_render_pipeline();
+  // prepare_normal_render_pipeline();
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 }
 

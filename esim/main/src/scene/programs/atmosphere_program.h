@@ -54,6 +54,9 @@ inline atmosphere_program::atmosphere_program() noexcept
   assert(link_shader_and_common_shaders(vshader_, fshader_));
 
   location_pos_ = attribute_location("a_Pos");
+  
+  set_kr(0.0025f);
+  set_km(0.0015f);
   set_esun(1.0f);
 }
 

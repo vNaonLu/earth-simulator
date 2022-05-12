@@ -41,7 +41,7 @@ protected:
   using program::uniform_location;
 
 protected:
-  GLint      location_camera_, location_sun_dir_,
+  GLint      location_resolution_, location_camera_, location_camera_dir_, location_sun_dir_,
              location_invwave_, location_oradius_, location_iradius_,
              location_krsun_, location_kmsun_, location_kr4pi_, location_km4pi_,
              location_scale_, location_scale_depth_, location_g_,
@@ -61,7 +61,9 @@ inline bool common_program::link_shader_and_common_shaders(shader_type &&sdr,
                    std::forward<shader_type>(sdr),
                    std::forward<shaders_type>(sdrs)...)) {
     
+    location_resolution_ = uniform_location("u_Resolution");
     location_camera_ = uniform_location("u_CameraPos");
+    location_camera_dir_ = uniform_location("u_CameraDir");
     location_sun_dir_ = uniform_location("u_LightDir");
     location_invwave_ = uniform_location("u_InvWavelength");
     location_oradius_ = uniform_location("u_OuterRadius");
@@ -97,7 +99,9 @@ common_program::update_common_uniform(const scene::frame_info &info) const noexc
   auto &cmr = info.camera;
   auto &sun = info.sun;
 
+  glUniform2fv(location_resolution_,  1, value_ptr(static_cast<vec2>(cmr.viewport())));
   glUniform3fv(location_camera_,  1, value_ptr(cmr.pos<float>()));
+  glUniform3fv(location_camera_dir_,  1, value_ptr(cmr.dir<float>()));
   glUniform3fv(location_sun_dir_, 1, value_ptr(sun.direction<float>()));
 
   glUniform3fv(location_invwave_, 1, value_ptr(inv_quat_wlength));

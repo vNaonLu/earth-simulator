@@ -61,6 +61,8 @@ public:
 private:
   enums::raw<status> state(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
+  void render_framebuffer() noexcept;
+
   void prepare_normal_render_pipeline() noexcept;
 
 private:

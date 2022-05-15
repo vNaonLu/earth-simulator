@@ -80,19 +80,7 @@ void esim_engine::opaque::render() noexcept {
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 
   /// debug
-  auto screen_prog = program::screen_program::get();
-  screen_prog->use();
-  quad_vbo_.bind();
-  screen_prog->enable_position_pointer();
-  screen_prog->update_alpha_uniform(0.5f);
-  glViewport(0, 0, 250, 250);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
-  glViewport(0, 250, 250, 250);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+  render_framebuffer();
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -142,7 +130,7 @@ bool esim_engine::opaque::poll_events() noexcept {
     ++pop_count;
   }
 
-  if (pop_count > 0 && (frame_info_.camera != info.camera || frame_info_.sun != info.sun)) {
+  if (pop_count > 0 && frame_info_ != info) {
     frame_info_ = info;
     resume();
   }
@@ -239,6 +227,34 @@ void esim_engine::opaque::prepare_normal_render_pipeline() noexcept {
       });
   pipeline_->push_render_entity(surface_entity_.get());
   pipeline_->push_render_entity(atmosphere_entity_.get());
+}
+
+void esim_engine::opaque::render_framebuffer() noexcept {
+  using namespace glm;
+  constexpr static ivec2 rez = {100, 100};
+  GLsizei frame_count = 0;
+  auto screen_prog = program::screen_program::get();
+  screen_prog->use();
+  quad_vbo_.bind();
+  screen_prog->enable_position_pointer();
+  screen_prog->update_alpha_uniform(0.5f);
+  if (frame_info_.debug_show_scene) {
+    glViewport(rez.x * (frame_count / 4), 
+               rez.y * (frame_count % 4), rez.x, rez.y);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    ++frame_count;
+  }
+
+  if(frame_info_.debug_show_light) {
+    glViewport(rez.x * (frame_count / 4), 
+               rez.y * (frame_count % 4), rez.x, rez.y);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    ++frame_count;
+  }
 }
 
 } // namespace esim

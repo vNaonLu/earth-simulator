@@ -1,4 +1,5 @@
 #include "esim_engine_opaque.h"
+#include "core/transform.h"
 #include <glad/glad.h>
 
 namespace esim {
@@ -10,6 +11,9 @@ scene::frame_info esim_engine::opaque::frame_info() const noexcept {
 
 void esim_engine::opaque::render() noexcept {
   using namespace glm;
+  auto &cmr = frame_info_.camera;
+  auto &sun = frame_info_.sun;
+
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -48,18 +52,40 @@ void esim_engine::opaque::render() noexcept {
 
   /// blend
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto blend_prog = program::screen_program::get();
+  auto blend_prog = program::blend_program::get();
   blend_prog->use();
   quad_vbo_.bind();
   blend_prog->enable_position_pointer();
-  blend_prog->update_alpha_uniform(1.0f);
+
+  auto m = translate(mat4x4{1.0f}, -cmr.pos<float>());
+  m = scale(m, vec3{astron::au<float>()});
+  m = sun.rotate_to_solar_direction(m);
+  auto view = cmr.view<float>();
+  auto proj = cmr.project<float>();
+  auto pos = proj * view * m * vec4(1.0, 0.0, 0.0, 1.0);
+  pos.x /= pos.w;
+  pos.y /= pos.w;
+
+  blend_prog->update_ndc_sun_uniform(static_cast<vec2>(pos));
+  blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 
   /// debug
+  auto screen_prog = program::screen_program::get();
+  screen_prog->use();
+  quad_vbo_.bind();
+  screen_prog->enable_position_pointer();
+  screen_prog->update_alpha_uniform(0.5f);
   glViewport(0, 0, 250, 250);
-  blend_prog->update_alpha_uniform(0.5f);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+  glViewport(0, 250, 250, 250);
+  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 }

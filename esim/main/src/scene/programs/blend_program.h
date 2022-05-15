@@ -23,6 +23,12 @@ public:
 
   static rptr<blend_program> get() noexcept;
 
+  template <typename type>
+  void update_resolution_uniform(type &&val) noexcept;
+
+  template <typename type>
+  void update_ndc_sun_uniform(type &&val) noexcept;
+
   void update_exposure_uniform(float val) noexcept;
 
   void update_gamma_uniform(float val) noexcept;
@@ -35,7 +41,8 @@ public:
 
 private:
   gl::shader vshader_, fshader_;
-  GLint      location_exposure_, location_gamma_;
+  GLint      location_exposure_, location_gamma_, location_ndc_sun_,
+             location_resolution_;
   GLint      location_pos_;
 };
 
@@ -46,6 +53,16 @@ inline rptr<blend_program> blend_program::get() noexcept {
   }
 
   return single.get();
+}
+
+template <typename type>
+inline void blend_program::update_ndc_sun_uniform(type &&val) noexcept {
+  glUniform2fv(location_ndc_sun_, 1, glm::value_ptr(std::forward<type>(val)));
+}
+
+template <typename type>
+inline void blend_program::update_resolution_uniform(type &&val) noexcept {
+  glUniform2fv(location_resolution_, 1, glm::value_ptr(std::forward<type>(val)));
 }
 
 inline void blend_program::update_exposure_uniform(float val) noexcept {
@@ -70,6 +87,8 @@ inline blend_program::blend_program() noexcept
 
   location_exposure_ = uniform_location("u_Exposure");
   location_gamma_ = uniform_location("u_Gamma");
+  location_ndc_sun_ = uniform_location("u_LightNDCSunPos");
+  location_resolution_ = uniform_location("u_Resolution");
   
   location_pos_ = attribute_location("a_Pos");
 }

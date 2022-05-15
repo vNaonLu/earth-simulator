@@ -2,7 +2,7 @@
 precision highp float;
 
 layout (location = 0) out vec4 FragColor;
-layout (location = 1) out vec4 BrightColor;
+layout (location = 1) out vec4 FragOccluders;
 
 const float Brightness = 1.0f;
 const float Contrast = 1.5f;
@@ -11,15 +11,6 @@ const vec4  AverageLuminance = vec4(vec3(2.0f), 1.0f);
 uniform sampler2D u_BaseMap;
 
 in vec2 v_TexCoord;
-
-void CalcBrightness(out vec4 out_color, vec4 color) {
-  float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-  if (brightness > 1.0) {
-    out_color = vec4(color.rgb, 1.0);
-  } else {
-    out_color = vec4(0.0, 0.0, 0.0, 1.0);
-  }
-}
 
 void main() {
   vec4 space_color;
@@ -37,7 +28,7 @@ void main() {
    * You can pass in (0.5, 0.5, 0.5, 1.0) for AverageLuminance for a quick-and-dirty grey value,
    * but better results will be obtained by calculating a proper average luminance for your texture.
    */
-  FragColor = mix(space_color * Brightness,  mix(AverageLuminance, space_color, Contrast), 0.5);
+  FragColor = max(mix(space_color * Brightness,  mix(AverageLuminance, space_color, Contrast), 0.5), 0.0);
   FragColor.a = 1.0;
-  CalcBrightness(BrightColor, FragColor);
+  FragOccluders = vec4(0.0, 0.0, 0.0, 0.0);
 }

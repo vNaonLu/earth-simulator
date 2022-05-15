@@ -8,7 +8,7 @@ namespace esim {
 namespace details {
 
 struct sun_vertex {
-  glm::vec3 pos;
+  glm::vec2 pos;
 };
 
 } // namespace details
@@ -38,6 +38,9 @@ public:
   
   template <typename type>
   void update_pixel_size_uniform(type &&val) const noexcept;
+  
+  template <typename type>
+  void update_solar_location_uniform(type &&val) const noexcept;
 
   void enable_position_pointer() const noexcept;
 
@@ -48,7 +51,8 @@ public:
 private:
   gl::shader vshader_, fshader_;
   GLint      location_model_mat_, location_view_mat_, location_proj_mat_,
-             location_solar_color_, location_ndc_size_, location_viewport_;
+             location_solar_color_, location_pixel_radius_, location_viewport_,
+             location_solar_location_;
   GLint      location_pos_;
 };
 
@@ -98,13 +102,19 @@ inline void sun_program::update_solar_color_uniform(type &&val) const noexcept {
 
 template <typename type>
 inline void sun_program::update_pixel_size_uniform(type &&val) const noexcept {
-  assert(-1 != location_ndc_size_);
-  glUniform1f(location_ndc_size_, std::forward<type>(val));
+  assert(-1 != location_pixel_radius_);
+  glUniform1f(location_pixel_radius_, std::forward<type>(val));
+}
+
+template <typename type>
+inline void sun_program::update_solar_location_uniform(type &&val) const noexcept {
+  assert(-1 != location_solar_location_);
+  glUniform4fv(location_solar_location_, 1, glm::value_ptr(std::forward<type>(val)));
 }
 
 inline void sun_program::enable_position_pointer() const noexcept {
   glEnableVertexAttribArray(location_pos_);
-  glVertexAttribPointer(location_pos_, 3, GL_FLOAT, GL_FALSE,
+  glVertexAttribPointer(location_pos_, 2, GL_FLOAT, GL_FALSE,
                         sizeof(vertex_type), (void *)0);
 }
 
@@ -118,8 +128,9 @@ inline sun_program::sun_program() noexcept
   location_view_mat_ = uniform_location("u_View");
   location_proj_mat_ = uniform_location("u_Proj");
   location_solar_color_ = uniform_location("u_SolarColor");
-  location_ndc_size_ = uniform_location("u_NDCSize");
-  location_viewport_ = uniform_location("u_Viewport");
+  location_pixel_radius_ = uniform_location("u_PixelRadius");
+  location_solar_location_ = uniform_location("u_SolorNDCPos");
+  location_viewport_ = uniform_location("u_Resolution");
 
   location_pos_ = attribute_location("a_Pos");
 }

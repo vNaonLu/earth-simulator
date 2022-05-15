@@ -23,6 +23,10 @@ publisher::publisher() noexcept {
 }
 
 publisher::~publisher() noexcept {
+  for(auto &observer : followers_) {
+    observer->followed_.erase(this);
+  }
+  followers_.clear();
 }
 
 } // namespace details

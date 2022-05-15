@@ -66,6 +66,7 @@ void esim_engine::opaque::render() noexcept {
   pos.x /= pos.w;
   pos.y /= pos.w;
 
+  blend_prog->update_enable_scattering_uniform(1);
   blend_prog->update_ndc_sun_uniform(static_cast<vec2>(pos));
   blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
   glActiveTexture(GL_TEXTURE0);

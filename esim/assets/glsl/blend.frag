@@ -10,6 +10,7 @@ precision highp float;
 uniform layout(binding = 0) sampler2D u_Scene;
 uniform layout(binding = 1) sampler2D u_OccludersSampler;
 uniform vec2  u_LightNDCSunPos;
+uniform bool  u_EnableScattering;
 uniform vec2  u_Resolution;
 uniform float u_Exposure;
 uniform float u_Gamma;
@@ -17,6 +18,10 @@ uniform float u_Gamma;
 in vec2 v_TexCoords;
 
 out vec4 FragColor;
+
+void Scene(out vec4 out_fragColor, vec2 fragCoord) {
+  out_fragColor = texture(u_Scene, fragCoord);
+}
 
 void NDCFixToZeroOne(out vec2 out_pixel, vec2 ndc) {
   out_pixel = (ndc + 1.0) / 2.0;
@@ -55,6 +60,12 @@ void main() {
   // vec3 result = vec3(1.0) - exp(-hdrColor * u_Exposure);
   //      result = pow(result, vec3(1.0 / u_Gamma));
 
+  
   // FragColor = vec4(texture(u_Scene, v_TexCoords).rgb, 1.0);
-  CalcGodRay(FragColor, v_TexCoords);
+  if (u_EnableScattering) {
+    CalcGodRay(FragColor, v_TexCoords);
+  } else {
+    Scene(FragColor, v_TexCoords);
+  }
+  FragColor.a = 1.0;
 }

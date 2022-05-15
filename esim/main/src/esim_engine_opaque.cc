@@ -34,19 +34,18 @@ void esim_engine::opaque::render() noexcept {
 
   glEnable(GL_CULL_FACE);
   glFrontFace(GL_CCW);
-
   skysphere_entity_->render(frame_info_);
 
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);
-
   sun_entity_->render(frame_info_);
 
   glDepthMask(GL_TRUE);
-
-  surface_entity_->render(frame_info_);
-
+  glFrontFace(GL_CCW);
   atmosphere_entity_->render(frame_info_);
+
+  glFrontFace(GL_CCW);
+  surface_entity_->render(frame_info_);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -72,8 +71,8 @@ void esim_engine::opaque::render() noexcept {
   glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
   noise_.bind(0, 2);
   blend_prog->update_enable_scattering_uniform(1);
-  blend_prog->update_gamma_uniform(2.2f);
-  blend_prog->update_exposure_uniform(0.24f);
+  blend_prog->update_gamma_uniform(1.0f / 2.2f);
+  blend_prog->update_exposure_uniform(1.0f);
   blend_prog->update_ndc_sun_uniform(static_cast<vec4>(sun_ndc));
   blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
   blend_prog->update_dither_resolution_uniform(static_cast<vec2>(noise_.resolution()));

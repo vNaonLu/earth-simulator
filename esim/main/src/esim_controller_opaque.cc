@@ -85,7 +85,7 @@ void esim_controller::opaque::calculate_zoom() noexcept {
     dvec3 ground;
     auto pos = cmr.pos<double>(), dir = cmr.dir<double>(), up = cmr.up<double>();
 
-    geo::ecef_to_geo(pos, ground); ground.z = 0.0f;
+    geo::ecef_to_geo(pos, ground); ground.z = 10000.0f;
     geo::geo_to_ecef(ground, ground);
     
     pos += (ground - pos) / 10.0 * zoom_tick_;

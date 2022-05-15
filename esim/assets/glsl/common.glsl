@@ -286,15 +286,23 @@ void CalcAmbient(out vec3 out_ambient) {
 }
 
 //==================================================================
+// calculate the specular
+void CalcSpecular(out vec3 out_specular, vec3 view_dir, vec3 normal, float scale) {
+  vec3 reflect_dir = reflect(-u_LightDir, normal);
+  float spec = pow(max(dot(view_dir, reflect_dir), 0.0), scale);
+  out_specular =  spec * 0.5 * vec3(1.0, 1.0, 1.0);
+}
+
+//==================================================================
 // calculate light scale
-void CalcLightScale(out vec3 out_lightScale, vec3 normal) {
-  vec3 ambient;
-  vec3 diffuse;
+void CalcLightScale(out vec3 out_lightScale, vec3 view_dir, vec3 normal, float specular_scale) {
+  vec3 ambient, diffuse, specular;
 
   CalcDiffuse(diffuse, normal);
   CalcAmbient(ambient);
+  CalcSpecular(specular, view_dir, normal, specular_scale);
 
-  out_lightScale =  ambient + diffuse;
+  out_lightScale = ambient + diffuse + specular;
 }
 
 //==================================================================

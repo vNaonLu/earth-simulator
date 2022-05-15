@@ -77,9 +77,9 @@ inline surface_program::surface_program() noexcept
   location_normal_   = attribute_location("a_Normal");
   location_texcoord_ = attribute_location("a_TexCoord");
 
-  set_kr(0.0015f);
+  set_kr(0.0025f);
   set_km(0.0015f);
-  set_esun(10.0f);
+  set_esun(20.0f);
 }
 
 inline surface_program::~surface_program() noexcept {}

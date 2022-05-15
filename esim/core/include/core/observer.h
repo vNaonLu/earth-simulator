@@ -26,6 +26,14 @@ public:
   void subscribe(rptr<class publisher> publisher) noexcept;
 
   /**
+   * @brief Unubscribe a publisher class, and wait to receive the message
+   * from the publisher.
+   *
+   * @param publisher specifies the target publisher.
+   */
+  void unsubscribe(rptr<class publisher> publisher) noexcept;
+
+  /**
    * @brief Construct a new observer object.
    * 
    */

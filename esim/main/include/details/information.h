@@ -15,7 +15,22 @@ namespace scene {
 struct frame_info {
   class camera camera;
   class sun    sun;
+  bool         debug_show_scene;
+  bool         debug_show_light;
 };
+
+inline bool operator==(const frame_info &lhs, const frame_info &rhs) {
+  
+  return (lhs.camera == rhs.camera) &&
+         (lhs.sun == rhs.sun) &&
+         (lhs.debug_show_light == rhs.debug_show_light) &&
+         (lhs.debug_show_scene == rhs.debug_show_scene);
+}
+
+inline bool operator!=(const frame_info &lhs, const frame_info &rhs) {
+  
+  return !operator==(lhs, rhs);
+}
 
 } // namespace scene
 

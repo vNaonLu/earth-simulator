@@ -10,6 +10,11 @@ void observer::subscribe(rptr<class publisher> publisher) noexcept {
   followed_.insert(publisher);
 }
 
+void observer::unsubscribe(rptr<class publisher> publisher) noexcept {
+  publisher->_unregister(this);
+  followed_.erase(publisher);
+}
+
 observer::observer() noexcept {
 }
 
@@ -17,6 +22,7 @@ observer::~observer() noexcept {
   for (auto &publisher : followed_) {
     publisher->_unregister(this);
   }
+  followed_.clear();
 }
 
 } // namespace details

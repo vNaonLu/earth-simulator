@@ -1,4 +1,5 @@
 #include "esim_engine_opaque.h"
+#include "core/transform.h"
 #include <glad/glad.h>
 
 namespace esim {
@@ -10,6 +11,9 @@ scene::frame_info esim_engine::opaque::frame_info() const noexcept {
 
 void esim_engine::opaque::render() noexcept {
   using namespace glm;
+  auto &cmr = frame_info_.camera;
+  auto &sun = frame_info_.sun;
+
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -48,20 +52,35 @@ void esim_engine::opaque::render() noexcept {
 
   /// blend
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto blend_prog = program::screen_program::get();
+  auto blend_prog = program::blend_program::get();
   blend_prog->use();
   quad_vbo_.bind();
   blend_prog->enable_position_pointer();
-  blend_prog->update_alpha_uniform(1.0f);
+
+  auto m = translate(mat4x4{1.0f}, -cmr.pos<float>());
+  m = scale(m, vec3{astron::au<float>()});
+  m = sun.rotate_to_solar_direction(m);
+  auto view = cmr.view<float>();
+  auto proj = cmr.project<float>();
+  auto sun_ndc = proj * view * m * vec4(1.0, 0.0, 0.0, 1.0);
+  sun_ndc.x /= sun_ndc.w;
+  sun_ndc.y /= sun_ndc.w;
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+  noise_.bind(0, 2);
+  blend_prog->update_enable_scattering_uniform(1);
+  blend_prog->update_gamma_uniform(2.2f);
+  blend_prog->update_exposure_uniform(0.24f);
+  blend_prog->update_ndc_sun_uniform(static_cast<vec4>(sun_ndc));
+  blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
+  blend_prog->update_dither_resolution_uniform(static_cast<vec2>(noise_.resolution()));
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 
   /// debug
-  glViewport(0, 0, 250, 250);
-  blend_prog->update_alpha_uniform(0.5f);
-  glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+  render_framebuffer();
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -111,7 +130,7 @@ bool esim_engine::opaque::poll_events() noexcept {
     ++pop_count;
   }
 
-  if (pop_count > 0 && (frame_info_.camera != info.camera || frame_info_.sun != info.sun)) {
+  if (pop_count > 0 && frame_info_ != info) {
     frame_info_ = info;
     resume();
   }
@@ -128,6 +147,8 @@ esim_engine::opaque::opaque() noexcept
       atmosphere_entity_{make_uptr<scene::atmosphere>()},
       color_buffers_(2), quad_vbo_{GL_ARRAY_BUFFER} {
   using namespace glm;
+
+  assert(noise_.load("assets/img/noise.png"));
 
   glGenFramebuffers(1, &hdr_fbo_);
   glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);
@@ -206,6 +227,34 @@ void esim_engine::opaque::prepare_normal_render_pipeline() noexcept {
       });
   pipeline_->push_render_entity(surface_entity_.get());
   pipeline_->push_render_entity(atmosphere_entity_.get());
+}
+
+void esim_engine::opaque::render_framebuffer() noexcept {
+  using namespace glm;
+  constexpr static ivec2 rez = {100, 100};
+  GLsizei frame_count = 0;
+  auto screen_prog = program::screen_program::get();
+  screen_prog->use();
+  quad_vbo_.bind();
+  screen_prog->enable_position_pointer();
+  screen_prog->update_alpha_uniform(0.5f);
+  if (frame_info_.debug_show_scene) {
+    glViewport(rez.x * (frame_count / 4), 
+               rez.y * (frame_count % 4), rez.x, rez.y);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    ++frame_count;
+  }
+
+  if(frame_info_.debug_show_light) {
+    glViewport(rez.x * (frame_count / 4), 
+               rez.y * (frame_count % 4), rez.x, rez.y);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    ++frame_count;
+  }
 }
 
 } // namespace esim

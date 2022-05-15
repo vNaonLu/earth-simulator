@@ -130,9 +130,32 @@ void esim_controller::opaque::calculate_rotation() noexcept {
     }
 }
 
-void esim_controller::opaque::calculate_move() noexcept {
+void esim_controller::opaque::calculate_motion() noexcept {
   calculate_zoom();
   calculate_rotation();
+}
+
+void esim_controller::opaque::event_key_press(protocol::keycode_type key) noexcept {
+  pressed_keys_.insert(key);
+
+  switch (key) {
+  case protocol::KEY_ONE:
+    frame_info_.debug_show_scene = !frame_info_.debug_show_scene;
+    redraw_event();
+    break;
+
+  case protocol::KEY_TWO:
+    frame_info_.debug_show_light = !frame_info_.debug_show_light;
+    redraw_event();
+    break;
+  
+  default:
+    break;
+  }
+}
+
+void esim_controller::opaque::event_key_release(protocol::keycode_type key) noexcept {
+  pressed_keys_.erase(key);
 }
 
 void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
@@ -147,10 +170,10 @@ void esim_controller::opaque::event_perform(const protocol::event &event) noexce
     cmr.set_viewport(event.x, event.y);
     break;
   case protocol::EVENT_KEYPRESS:
-    pressed_keys_.insert(event.key);
+    event_key_press(event.key);
     break;
   case protocol::EVENT_KEYRELEASE:
-    pressed_keys_.erase(event.key);
+    event_key_release(event.key);
     break;
   }
 }
@@ -163,7 +186,7 @@ void esim_controller::opaque::event_handler() noexcept {
         event_perform(event_msg);
       }
 
-      calculate_move();
+      calculate_motion();
     }
   }
 }

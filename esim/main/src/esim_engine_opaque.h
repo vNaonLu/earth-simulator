@@ -6,6 +6,7 @@
 #include "esim/esim_engine.h"
 #include "esim_render_pipe.h"
 #include "glapi/buffer.h"
+#include "glapi/texture.h"
 #include "scene/atmosphere.h"
 #include "scene/programs/screen_program.h"
 #include "scene/skysphere.h"
@@ -60,6 +61,8 @@ public:
 private:
   enums::raw<status> state(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
+  void render_framebuffer() noexcept;
+
   void prepare_normal_render_pipeline() noexcept;
 
 private:
@@ -77,6 +80,7 @@ private:
   ///frame buffer
   GLuint                                   hdr_fbo_, rbo_depth_;
   std::vector<GLuint>                      color_buffers_;
+  gl::texture                              noise_;
   gl::buffer<esim::details::screen_vertex> quad_vbo_;
 };
 

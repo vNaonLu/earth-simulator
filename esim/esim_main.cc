@@ -95,7 +95,7 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window,
 static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
-    std::cout << 35 << std::endl;
+    esim_engine->stop();
     esim_ctrler->stop();
   } else {
     if (auto keycode = glfw_to_keycode(key); keycode != -1) {
@@ -123,6 +123,11 @@ inline esim::protocol::keycode_type glfw_to_keycode(int glfw_key) noexcept {
     return esim::protocol::KEY_RIGHT;
   case GLFW_KEY_DOWN:
     return esim::protocol::KEY_DOWN;
+
+  case GLFW_KEY_1:
+    return esim::protocol::KEY_ONE;
+  case GLFW_KEY_2:
+    return esim::protocol::KEY_TWO;
 
   default:
     return esim::protocol::KEY_NONE;

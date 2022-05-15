@@ -50,7 +50,11 @@ private:
 
   void calculate_rotation() noexcept;
 
-  void calculate_move() noexcept;
+  void calculate_motion() noexcept;
+
+  void event_key_press(protocol::keycode_type key) noexcept;
+
+  void event_key_release(protocol::keycode_type key) noexcept;
 
   void event_perform(const protocol::event &event) noexcept;
 

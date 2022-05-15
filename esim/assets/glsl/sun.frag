@@ -22,7 +22,7 @@ void CalcSunBrightness(out float out_value, float dist_to_sun) {
     float easing = (dist_to_sun - u_PixelRadius) / (30.0 * u_PixelRadius);
     out_value = 1.0 - easing;
   }
-  out_value = max(out_value, 0.0);
+  out_value = max(out_value * 1.0, 0.0);
 }
 
 void main() {

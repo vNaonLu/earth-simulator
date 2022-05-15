@@ -3,9 +3,11 @@
 
 #include <cassert>
 #include <glad/glad.h>
+#include <glm/vec2.hpp>
 #include <stb/stb_image.h>
 #include <string_view>
 #include <vector>
+#include <iostream>
 
 namespace esim {
 
@@ -31,7 +33,15 @@ public:
    * @param file specifies the target file location.
    * @param idx specifies the index of texture.
    */
-  bool load(std::string_view file, size_t idx = 0) const noexcept;
+  bool load(std::string_view file, size_t idx = 0) noexcept;
+
+  /**
+   * @brief Obtain the resolution of texture.
+   * 
+   * @param idx specifies the index of texture.
+   * @return the 2-integer vector.
+   */
+  glm::ivec2 resolution(size_t idx = 0) const noexcept;
 
   /**
    * @brief Construct a new texture object.
@@ -47,7 +57,8 @@ public:
   ~texture() noexcept;
 
 private:
-  std::vector<GLuint> ids_;
+  std::vector<GLuint>     ids_;
+  std::vector<glm::ivec2> resolution_;
 };
 
 } // namespace gl

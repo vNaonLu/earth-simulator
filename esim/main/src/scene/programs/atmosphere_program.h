@@ -57,7 +57,7 @@ inline atmosphere_program::atmosphere_program() noexcept
   
   set_kr(0.0025f);
   set_km(0.0015f);
-  set_esun(1.0f);
+  set_esun(20.0f);
 }
 
 inline atmosphere_program::~atmosphere_program() noexcept {}

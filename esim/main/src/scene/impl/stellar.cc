@@ -25,7 +25,7 @@ void stellar::render(const frame_info &info) noexcept {
   program->update_viewport_uniform(static_cast<vec2>(cmr.viewport()));
   program->update_solar_location_uniform(pos);
   program->update_solar_color_uniform(vec4{1.0, 1.0, 1.0, 1.0f});
-  program->update_pixel_size_uniform(0.5f);
+  program->update_pixel_size_uniform(0.1f);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(vbo_.size()));
 }
 

@@ -79,7 +79,7 @@ std::vector<uint32_t> atmosphere::gen_element_buffer() noexcept {
   std::vector<uint32_t> buffer((details::latitude_details + 1) *
                                details::longitude_details * 6);
   auto it = buffer.begin();
-  for (uint32_t i = 0; i <= details::latitude_details; ++i) {
+  for (uint32_t i = 0; i < details::latitude_details; ++i) {
     for (uint32_t j = 0; j < details::longitude_details; ++j) {
       *it++ = to_vertex_index(i, j);
       *it++ = to_vertex_index(i + 1, j + 1);

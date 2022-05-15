@@ -62,17 +62,21 @@ void esim_engine::opaque::render() noexcept {
   m = sun.rotate_to_solar_direction(m);
   auto view = cmr.view<float>();
   auto proj = cmr.project<float>();
-  auto pos = proj * view * m * vec4(1.0, 0.0, 0.0, 1.0);
-  pos.x /= pos.w;
-  pos.y /= pos.w;
+  auto sun_ndc = proj * view * m * vec4(1.0, 0.0, 0.0, 1.0);
+  sun_ndc.x /= sun_ndc.w;
+  sun_ndc.y /= sun_ndc.w;
 
-  blend_prog->update_enable_scattering_uniform(1);
-  blend_prog->update_ndc_sun_uniform(static_cast<vec2>(pos));
-  blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[0]);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+  noise_.bind(0, 2);
+  blend_prog->update_enable_scattering_uniform(1);
+  blend_prog->update_gamma_uniform(2.2f);
+  blend_prog->update_exposure_uniform(0.24f);
+  blend_prog->update_ndc_sun_uniform(static_cast<vec4>(sun_ndc));
+  blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
+  blend_prog->update_dither_resolution_uniform(static_cast<vec2>(noise_.resolution()));
   glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
 
   /// debug
@@ -155,6 +159,8 @@ esim_engine::opaque::opaque() noexcept
       atmosphere_entity_{make_uptr<scene::atmosphere>()},
       color_buffers_(2), quad_vbo_{GL_ARRAY_BUFFER} {
   using namespace glm;
+
+  assert(noise_.load("assets/img/noise.png"));
 
   glGenFramebuffers(1, &hdr_fbo_);
   glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);

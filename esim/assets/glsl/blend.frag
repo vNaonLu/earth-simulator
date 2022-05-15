@@ -142,12 +142,12 @@ vec3 CalcScene(vec2 fragCoord) {
 
 void main() {
   vec3 color = CalcScene(v_TexCoords);
+  color.rgb = vec3(1.0) - exp(-color.rgb * u_Exposure);
+  color.rgb = pow(color.rgb, vec3(1.0 / u_Gamma));
 
   if (u_EnableScattering) {
     color += CalcLightEffect(v_TexCoords);
   }
-  // color.rgb = vec3(1.0) - exp(-color.rgb * u_Exposure);
-  // color.rgb = pow(color.rgb, vec3(1.0 / u_Gamma));
 
   FragColor = vec4(color.rgb, 1.0);
 }

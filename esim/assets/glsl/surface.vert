@@ -15,6 +15,7 @@ out vec3 v_Normal;
 out vec2 v_TexCoord;
 out vec3 v_GroundColor;
 out vec3 v_Attenuation;
+out vec3 v_FragPos;
 
 void ONAS_CalcColorsForGroundInside(out vec3 out_groundCol, out vec3 out_attenuation, vec3 pos);
 
@@ -32,6 +33,7 @@ void main (void) {
   }
 
   mat4 mvp = u_Proj * u_View * u_Modl;
+  v_FragPos = (u_Modl * vec4(a_Pos, 1.0)).xyz;
   v_TexCoord = a_TexCoord;
   v_Normal = (u_Modl * vec4(a_Normal, 0.0)).xyz;
   gl_Position = mvp * vec4(a_Pos, 1.0);

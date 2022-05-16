@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace esim {
 
@@ -31,15 +32,17 @@ private:
 
   uint16_t to_vertex_index(size_t row, size_t col) const noexcept;
 
+  /// layer-threading
+
   void prepare_render() noexcept;
 
 private:
-  size_t                          vertex_details_;
-  gl::buffer<uint16_t>            ebo_;
-  std::atomic<bool>               next_frame_prepared_, is_working_;
-  std::vector<rptr<surface_tile>> render_tiles_, next_frame_tiles_;
-  std::vector<rptr<surface_tile>> candidate_tiles_;
-  std::vector<std::unordered_map<geo::maptile, uptr<surface_tile>>> tiles_;
+  size_t                                 vertex_details_;
+  gl::buffer<uint16_t>                   ebo_;
+  std::atomic<bool>                      next_frame_prepared_, is_working_;
+  uptr<surface_tile>                     surface_root_;
+  std::vector<rptr<surface_tile>>        render_tiles_, next_frame_tiles_;
+  std::unordered_set<rptr<surface_tile>> candidate_tiles_;
 };
 
 } // namespace scene

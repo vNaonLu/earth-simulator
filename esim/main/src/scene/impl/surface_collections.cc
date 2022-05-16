@@ -34,13 +34,12 @@ void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame
 
 surface_collection::surface_collection(size_t vertex_details) noexcept
     : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2},
-      next_frame_prepared_{false}, is_working_{true}, tiles_(31) {
+      next_frame_prepared_{false}, is_working_{true},
+      surface_root_{make_uptr<surface_tile>(geo::maptile{0, 0, 0})} {
   ebo_.bind_buffer(gen_surface_element_buffer(), GL_STATIC_DRAW, 0);
   ebo_.bind_buffer(gen_bounding_box_element_buffer(), GL_STATIC_DRAW, 1);
 
-  auto [it, inserted] = tiles_[0].emplace(geo::maptile{0, 0, 0}, make_uptr<surface_tile>(geo::maptile{0, 0, 0}));
-  assert(inserted);
-  candidate_tiles_.emplace_back(it->second.get());
+  candidate_tiles_.emplace(surface_root_.get());
 
   std::thread([=]() {
     while (is_working_.load(std::memory_order_relaxed)) {
@@ -101,11 +100,26 @@ uint16_t surface_collection::to_vertex_index(size_t row, size_t col) const noexc
 }
 
 void surface_collection::prepare_render() noexcept {
+  auto prev_candidates = std::move(candidate_tiles_);
+
+  for (auto &node : prev_candidates) {
+    auto parent = node->collapse();
+
+    if (candidate_tiles_.count(parent)) {
+      /// the parent existence means 
+      /// there exists at least one collapsed brother before,
+      /// ignore the current node therefore.
+      continue;
+    }
+
+    // auto [too_far, too_near] = node->is_enough_resolution();
+    candidate_tiles_.emplace(node);
+  }
+
   if (next_frame_prepared_.load(std::memory_order_acquire)) {
     std::this_thread::yield();
   } else {
     next_frame_tiles_.clear();
-    next_frame_tiles_.reserve(candidate_tiles_.size());
     for (auto &node : candidate_tiles_) {
       if (!node->is_ready_to_render()) {
         node->gen_vertex_buffer(vertex_details_);

@@ -6,6 +6,7 @@
 #include "glapi/buffer.h"
 #include "glapi/texture.h"
 #include "programs/surface_program.h"
+#include <array>
 
 namespace esim {
 
@@ -13,6 +14,8 @@ namespace scene {
 
 class surface_tile final {
 public:
+  const geo::maptile &details() const noexcept;
+
   void gen_vertex_buffer(size_t details) noexcept;
 
   bool is_ready_to_render() const noexcept;
@@ -25,6 +28,10 @@ public:
 
   ~surface_tile() = default;
 
+  std::array<rptr<surface_tile>, 4> expand() noexcept;
+
+  rptr<surface_tile> collapse() noexcept;
+
 private:
   void before_render() noexcept;
 
@@ -35,6 +42,9 @@ private:
   glm::dvec3                          offset_;
   gl::texture                         basemap_;
   gl::buffer<details::surface_vertex> vbo_;
+
+  rptr<surface_tile>                parent_;
+  std::array<uptr<surface_tile>, 4> children_;
 
   mutable std::vector<details::surface_vertex> temp_vertex_;
 };

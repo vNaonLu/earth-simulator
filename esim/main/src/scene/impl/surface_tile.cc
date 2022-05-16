@@ -187,6 +187,11 @@ size_t surface_tile_helper::to_buffer_index(size_t i, size_t j) const noexcept {
 
 namespace scene {
 
+const geo::maptile &surface_tile::details() const noexcept {
+
+  return info_;
+}
+
 void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   using namespace glm;
   const double tile_stride = 1.f / static_cast<double>(details);
@@ -272,8 +277,35 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
 
 surface_tile::surface_tile(geo::maptile tile) noexcept
     : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
-      terrain_radius_{0.0}, offset_{0.0f}, vbo_{GL_ARRAY_BUFFER} {
+      terrain_radius_{0.0}, offset_{0.0f}, vbo_{GL_ARRAY_BUFFER}, parent_{nullptr} {
   assert(basemap_.load("assets/img/test_base000.jpg"));
+}
+
+std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {
+  std::array<rptr<surface_tile>, 4> res;
+  if (nullptr == children_.front()) {
+    /// children generated at same time
+    /// hence do check only once.
+    std::array<geo::maptile, 4> children_info = {geo::maptile{info_.lod, info_.x, info_.y},
+                                                 geo::maptile{info_.lod, info_.x, info_.y + 1},
+                                                 geo::maptile{info_.lod, info_.x + 1, info_.y},
+                                                 geo::maptile{info_.lod, info_.x + 1, info_.y + 1}};
+    for (size_t i = 0; i < 4; ++i) {
+      children_[i] = make_uptr<surface_tile>(children_info[i]);
+      children_[i]->parent_ = this;
+    }
+  }
+
+  for (size_t i = 0; i < 4; ++i) {
+    res[i] = children_[i].get();
+  }
+
+  return res;
+}
+
+rptr<surface_tile> surface_tile::collapse() noexcept {
+
+  return parent_;
 }
 
 } // namespace scene

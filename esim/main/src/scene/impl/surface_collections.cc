@@ -10,6 +10,8 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   ebo_.bind(0);
   program->update_common_uniform(info);
 
+  updating_queue_.try_push(info);
+
   if (next_frame_prepared_.load(std::memory_order_acquire)) {
     render_tiles_.swap(next_frame_tiles_);
     next_frame_prepared_.store(false, std::memory_order_release);
@@ -34,15 +36,16 @@ void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame
 
 surface_collection::surface_collection(size_t vertex_details) noexcept
     : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2},
-      next_frame_prepared_{false}, is_working_{true},
-      surface_root_{make_uptr<surface_tile>(geo::maptile{0, 0, 0})} {
+      next_frame_prepared_{false}, is_working_{false},
+      surface_root_{make_uptr<surface_tile>(geo::maptile{0, 0, 0})},
+      updating_queue_{256} {
   ebo_.bind_buffer(gen_surface_element_buffer(), GL_STATIC_DRAW, 0);
   ebo_.bind_buffer(gen_bounding_box_element_buffer(), GL_STATIC_DRAW, 1);
-
   candidate_tiles_.emplace(surface_root_.get());
+  is_working_.store(true, std::memory_order_release);
 
   std::thread([=]() {
-    while (is_working_.load(std::memory_order_relaxed)) {
+    while (is_working_.load(std::memory_order_acquire)) {
       this->prepare_render();
     }
   }).detach();
@@ -96,24 +99,50 @@ std::vector<uint16_t> surface_collection::gen_bounding_box_element_buffer() noex
 
 uint16_t surface_collection::to_vertex_index(size_t row, size_t col) const noexcept {
 
-  return static_cast<uint16_t>(row * (vertex_details_) + col);
+  return static_cast<uint16_t>(row * (vertex_details_ + 1) + col);
 }
 
-void surface_collection::prepare_render() noexcept {
+void surface_collection::adjust_candidates() noexcept {
   auto prev_candidates = std::move(candidate_tiles_);
 
   for (auto &node : prev_candidates) {
-    auto parent = node->collapse();
+    auto [too_far, too_near] = node->is_enough_resolution(last_frame_);
+    if (too_far) {
+      candidate_tiles_.emplace(node->collapse());
+    } else if (too_near) {
+      auto children = node->expand();
+      candidate_tiles_.insert(children.begin(), children.end());
+    } else {
+      candidate_tiles_.emplace(node);
+    }
+  }
 
+  std::vector<rptr<surface_tile>> slice_tiles;
+  for (auto &node : candidate_tiles_) {
+    auto parent = node->collapse();
     if (candidate_tiles_.count(parent)) {
-      /// the parent existence means 
+      /// the parent existence means
       /// there exists at least one collapsed brother before,
       /// ignore the current node therefore.
-      continue;
+      slice_tiles.emplace_back(node);
     }
+  }
 
-    // auto [too_far, too_near] = node->is_enough_resolution();
-    candidate_tiles_.emplace(node);
+  for (auto &node : slice_tiles) {
+    candidate_tiles_.erase(node);
+  }
+}
+
+void surface_collection::prepare_render() noexcept {
+  frame_info next_frame;
+  size_t event_count = 0;
+  while (updating_queue_.try_pop(next_frame)) {
+    ++event_count;
+  }
+
+  if (event_count > 0 && next_frame != last_frame_) {
+    last_frame_ = std::move(next_frame);
+    adjust_candidates();
   }
 
   if (next_frame_prepared_.load(std::memory_order_acquire)) {

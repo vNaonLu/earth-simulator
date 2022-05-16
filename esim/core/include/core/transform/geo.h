@@ -6,6 +6,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/mat4x4.hpp>
+#include <ostream>
 
 namespace esim {
 
@@ -103,6 +104,11 @@ inline bool operator==(const esim::geo::maptile &lhs, const esim::geo::maptile &
   return lhs.lod == rhs.lod &&
          lhs.x == rhs.x &&
          lhs.y == rhs.y;
+}
+
+inline ostream &operator<<(ostream& os, const esim::geo::maptile &rhs) noexcept {
+
+  return os << "(LOD: " << static_cast<int>(rhs.lod) << ", x: " << rhs.x << ", y: " << rhs.y << ")";
 }
 
 } // namespace std

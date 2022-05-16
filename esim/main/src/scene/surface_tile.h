@@ -36,12 +36,12 @@ private:
   void before_render() noexcept;
 
 private:
-  const geo::maptile                  info_;
-  bool                                ready_to_render_, buffer_generated_;
-  double                              terrain_radius_;
-  glm::dvec3                          offset_;
-  gl::texture                         basemap_;
-  gl::buffer<details::surface_vertex> vbo_;
+  const geo::maptile                        info_;
+  bool                                      ready_to_render_, buffer_generated_;
+  double                                    terrain_radius_;
+  glm::dvec3                                offset_;
+  gl::texture                               basemap_;
+  uptr<gl::buffer<details::surface_vertex>> vbo_;
 
   rptr<surface_tile>                parent_;
   std::array<uptr<surface_tile>, 4> children_;

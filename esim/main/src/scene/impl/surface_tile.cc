@@ -222,7 +222,8 @@ bool surface_tile::is_ready_to_render() const noexcept {
 
 void surface_tile::before_render() noexcept {
   if (!buffer_generated_) {
-    vbo_.bind_buffer(std::move(temp_vertex_));
+    vbo_ = make_uptr<gl::buffer<details::surface_vertex>>(GL_ARRAY_BUFFER);
+    vbo_->bind_buffer(std::move(temp_vertex_));
     buffer_generated_ = true;
   }
 }
@@ -233,15 +234,15 @@ void surface_tile::render(const scene::frame_info &info,
   using namespace glm;
   auto &sun = info.sun;
   auto &cmr = info.camera;
-  auto model = static_cast<mat4x4>(cmr.translate(dmat4x4{1.0f}, offset_));
-       model = rotate(model, astron::era<float>(sun.julian_date()), vec3{0.0f, 0.0f, 1.0f});
+  auto model = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+  model = cmr.translate(dmat4x4{1.0f}, offset_);
   auto program = program::surface_program::get();
-  basemap_.bind();
-  vbo_.bind();
+  // basemap_.bind();
+  vbo_->bind();
   program->enable_position_pointer();
   program->enable_normal_pointer();
   program->enable_texcoord_pointer();
-  program->update_model_uniform(model);
+  program->update_model_uniform(static_cast<mat4x4>(model));
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
 }
 
@@ -256,19 +257,15 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
 
   /// near check
   if (info_.lod < 10) {
-
-    too_near = 3.0 * dist <= terrain_radius_;
+    too_near = dist <= 3.0 * terrain_radius_;
   } else {
-
     too_near = false;
   }
 
   /// far check
   if (info_.lod > 0) {
-
-    too_far = dist >= 3.0 * terrain_radius_;
+    too_far = dist >= 6.0 * terrain_radius_;
   } else {
-
     too_far = false;
   }
 
@@ -277,8 +274,8 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
 
 surface_tile::surface_tile(geo::maptile tile) noexcept
     : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
-      terrain_radius_{0.0}, offset_{0.0f}, vbo_{GL_ARRAY_BUFFER}, parent_{nullptr} {
-  assert(basemap_.load("assets/img/test_base000.jpg"));
+      terrain_radius_{0.0}, offset_{0.0f}, parent_{nullptr} {
+  // assert(basemap_.load("assets/img/test_base000.jpg"));
 }
 
 std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {
@@ -286,10 +283,14 @@ std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {
   if (nullptr == children_.front()) {
     /// children generated at same time
     /// hence do check only once.
-    std::array<geo::maptile, 4> children_info = {geo::maptile{info_.lod, info_.x, info_.y},
-                                                 geo::maptile{info_.lod, info_.x, info_.y + 1},
-                                                 geo::maptile{info_.lod, info_.x + 1, info_.y},
-                                                 geo::maptile{info_.lod, info_.x + 1, info_.y + 1}};
+    geo::maptile child_info = info_;
+    ++child_info.lod;
+    child_info.x <<= 1;
+    child_info.y <<= 1;
+    std::array<geo::maptile, 4> children_info = {geo::maptile{child_info.lod, child_info.x, child_info.y},
+                                                 geo::maptile{child_info.lod, child_info.x, child_info.y + 1},
+                                                 geo::maptile{child_info.lod, child_info.x + 1, child_info.y},
+                                                 geo::maptile{child_info.lod, child_info.x + 1, child_info.y + 1}};
     for (size_t i = 0; i < 4; ++i) {
       children_[i] = make_uptr<surface_tile>(children_info[i]);
       children_[i]->parent_ = this;

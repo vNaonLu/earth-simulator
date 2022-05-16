@@ -19,7 +19,8 @@ void main() {
 
   CalcLightScale(light_scale, normalize(-v_FragPos), v_Normal, 32.0);
 
-  base_color = light_scale * texture2D(u_BaseMap, v_TexCoord).rgb;
+  // base_color = light_scale * texture2D(u_BaseMap, v_TexCoord).rgb;
+  base_color = light_scale * vec3(0.0, 0.8, 1.0);
   base_color = v_GroundColor + v_Attenuation * base_color;
 
   FragColor = vec4(base_color, 1.0);

@@ -2,6 +2,7 @@
 #define __ESIM_CORE_CORE_TRANSFORM_GEO_H_
 
 #include <cstdint>
+#include <functional>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/mat4x4.hpp>
@@ -85,6 +86,26 @@ glm::vec<3, type> &ecef_to_geo(const glm::vec<3, type> &ecef,
 } // namespace geo
 
 } // namespace  esim
+
+namespace std {
+
+template<>
+struct hash<esim::geo::maptile> {
+public:
+  inline std::size_t operator()(const esim::geo::maptile &tile) const noexcept {
+    std::size_t hash = (tile.x << 31) + tile.y;
+
+    return hash;
+  }
+};
+
+inline bool operator==(const esim::geo::maptile &lhs, const esim::geo::maptile &rhs) noexcept {
+  return lhs.lod == rhs.lod &&
+         lhs.x == rhs.x &&
+         lhs.y == rhs.y;
+}
+
+} // namespace std
 
 #include "geo.inl"
 

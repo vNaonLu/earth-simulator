@@ -9,7 +9,13 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   program->use();
   ebo_.bind(0);
   program->update_common_uniform(info);
-  for (auto &node : tiles_) {
+
+  if (next_frame_prepared_.load(std::memory_order_acquire)) {
+    render_tiles_.swap(next_frame_tiles_);
+    next_frame_prepared_.store(false, std::memory_order_release);
+  }
+
+  for (auto &node : render_tiles_) {
     node->render(info, ebo_.size(0));
   }
 }
@@ -27,15 +33,25 @@ void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame
 }
 
 surface_collection::surface_collection(size_t vertex_details) noexcept
-    : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2} {
+    : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2},
+      next_frame_prepared_{false}, is_working_{true}, tiles_(31) {
   ebo_.bind_buffer(gen_surface_element_buffer(), GL_STATIC_DRAW, 0);
   ebo_.bind_buffer(gen_bounding_box_element_buffer(), GL_STATIC_DRAW, 1);
 
-  tiles_.emplace_back(make_uptr<surface_tile>(geo::maptile{0, 0, 0}));
-  tiles_.front()->gen_vertex_buffer(vertex_details_);
+  auto [it, inserted] = tiles_[0].emplace(geo::maptile{0, 0, 0}, make_uptr<surface_tile>(geo::maptile{0, 0, 0}));
+  assert(inserted);
+  candidate_tiles_.emplace_back(it->second.get());
+
+  std::thread([=]() {
+    while (is_working_.load(std::memory_order_relaxed)) {
+      this->prepare_render();
+    }
+  }).detach();
 }
 
-surface_collection::~surface_collection() noexcept {}
+surface_collection::~surface_collection() noexcept {
+  is_working_.store(false, std::memory_order_relaxed);
+}
 
 std::vector<uint16_t> surface_collection::gen_surface_element_buffer() noexcept {
   const uint32_t vert_count = static_cast<uint32_t>(vertex_details_ * vertex_details_);
@@ -82,6 +98,23 @@ std::vector<uint16_t> surface_collection::gen_bounding_box_element_buffer() noex
 uint16_t surface_collection::to_vertex_index(size_t row, size_t col) const noexcept {
 
   return static_cast<uint16_t>(row * (vertex_details_) + col);
+}
+
+void surface_collection::prepare_render() noexcept {
+  if (next_frame_prepared_.load(std::memory_order_acquire)) {
+    std::this_thread::yield();
+  } else {
+    next_frame_tiles_.clear();
+    next_frame_tiles_.reserve(candidate_tiles_.size());
+    for (auto &node : candidate_tiles_) {
+      if (!node->is_ready_to_render()) {
+        node->gen_vertex_buffer(vertex_details_);
+      }
+
+      next_frame_tiles_.emplace_back(node);
+    }
+    next_frame_prepared_.store(true, std::memory_order_release);
+  }
 }
 
 } // namespace scene

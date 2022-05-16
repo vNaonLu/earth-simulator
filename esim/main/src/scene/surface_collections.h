@@ -6,6 +6,8 @@
 #include "programs/surface_program.h"
 #include "scene_entity.h"
 #include "surface_tile.h"
+#include <atomic>
+#include <thread>
 #include <unordered_map>
 
 namespace esim {
@@ -29,10 +31,15 @@ private:
 
   uint16_t to_vertex_index(size_t row, size_t col) const noexcept;
 
+  void prepare_render() noexcept;
+
 private:
   size_t                          vertex_details_;
   gl::buffer<uint16_t>            ebo_;
-  std::vector<uptr<surface_tile>> tiles_;
+  std::atomic<bool>               next_frame_prepared_, is_working_;
+  std::vector<rptr<surface_tile>> render_tiles_, next_frame_tiles_;
+  std::vector<rptr<surface_tile>> candidate_tiles_;
+  std::vector<std::unordered_map<geo::maptile, uptr<surface_tile>>> tiles_;
 };
 
 } // namespace scene

@@ -22,11 +22,13 @@ public:
 
   glm::dvec3 offset() const noexcept;
 
-  std::vector<vbo_buffer_type> export_buffer() const noexcept;
+  std::vector<vbo_buffer_type> export_buffer() noexcept;
 
   std::vector<glm::vec3> export_bounding_box() const noexcept;
 
   surface_tile_helper(size_t vd) noexcept;
+
+  double bounding_radius() const noexcept;
 
 private:
   size_t to_index(size_t i, size_t j) const noexcept;
@@ -36,6 +38,7 @@ private:
 private:
   const uint32_t           vertex_details_;
   const uint32_t           vertex_count_;
+  double                   radius_;
   std::vector<vertex_type> computing_;
   glm::dvec3               max_, min_;
   glm::dvec3               offset_;
@@ -104,21 +107,18 @@ glm::dvec3 surface_tile_helper::offset() const noexcept {
   return offset_;
 }
 
-std::vector<surface_tile_helper::vbo_buffer_type> surface_tile_helper::export_buffer() const noexcept {
+std::vector<surface_tile_helper::vbo_buffer_type> surface_tile_helper::export_buffer() noexcept {
+  using namespace glm;
   std::vector<vbo_buffer_type> res((vertex_details_ + 1) * (vertex_details_ + 1));
   auto v_it = computing_.begin();
   for (size_t i = 0; i < vertex_details_ + 1; ++i) {
     for (size_t j = 0; j < vertex_details_ + 1; ++j) {
       auto &compute_v = computing_[to_index(i + 1, j + 1)];
       auto &v = res[to_buffer_index(i, j)];
-      v.pos.x = static_cast<float>(compute_v.pos.x - offset_.x);
-      v.pos.y = static_cast<float>(compute_v.pos.y - offset_.y);
-      v.pos.z = static_cast<float>(compute_v.pos.z - offset_.z);
-      v.normal.x = static_cast<float>(compute_v.normal.x);
-      v.normal.y = static_cast<float>(compute_v.normal.y);
-      v.normal.z = static_cast<float>(compute_v.normal.z);
-      v.texcoord.x = static_cast<float>(compute_v.texcoord.x);
-      v.texcoord.y = static_cast<float>(compute_v.texcoord.y);
+      radius_ = max(radius_, length(compute_v.pos - offset_));
+      v.pos = static_cast<vec3>(compute_v.pos - offset_);
+      v.normal = static_cast<vec3>(compute_v.normal);
+      v.texcoord = static_cast<vec2>(compute_v.texcoord);
     }
   }
 
@@ -162,11 +162,15 @@ std::vector<glm::vec3> surface_tile_helper::export_bounding_box() const noexcept
 surface_tile_helper::surface_tile_helper(size_t vd) noexcept
     : vertex_details_{static_cast<uint32_t>(vd)},
       vertex_count_{static_cast<uint32_t>((vd + 3) * (vd + 3))},
-      computing_(vertex_count_),
+      radius_{0.0}, computing_(vertex_count_),
       max_{std::numeric_limits<double>::min()},
       min_{std::numeric_limits<double>::max()},
-      offset_{0.f},
-      it_{computing_.begin()} {
+      offset_{0.f}, it_{computing_.begin()} {
+}
+
+double surface_tile_helper::bounding_radius() const noexcept {
+
+  return radius_;
 }
 
 size_t surface_tile_helper::to_index(size_t i, size_t j) const noexcept {
@@ -200,19 +204,32 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
 
   vertex_helper.confirm();
   offset_ = vertex_helper.offset();
-  vbo_.bind_buffer(vertex_helper.export_buffer());
-  // box_vbo_.generate_buffer();
-  // box_vbo_.bind_buffer_data(vertex_helper.export_bounding_box());
+  temp_vertex_ = vertex_helper.export_buffer();
+  terrain_radius_ = vertex_helper.bounding_radius();
+
+  ready_to_render_ = true;
+}
+
+bool surface_tile::is_ready_to_render() const noexcept {
+
+  return ready_to_render_;
+}
+
+void surface_tile::before_render() noexcept {
+  if (!buffer_generated_) {
+    vbo_.bind_buffer(std::move(temp_vertex_));
+    buffer_generated_ = true;
+  }
 }
 
 void surface_tile::render(const scene::frame_info &info,
                           size_t indices_count) noexcept {
+  before_render();
   using namespace glm;
   auto &sun = info.sun;
   auto &cmr = info.camera;
   auto model = static_cast<mat4x4>(cmr.translate(dmat4x4{1.0f}, offset_));
-  model = rotate(model, astron::era<float>(sun.julian_date()),
-                 vec3{0.0f, 0.0f, 1.0f});
+       model = rotate(model, astron::era<float>(sun.julian_date()), vec3{0.0f, 0.0f, 1.0f});
   auto program = program::surface_program::get();
   basemap_.bind();
   vbo_.bind();
@@ -223,25 +240,39 @@ void surface_tile::render(const scene::frame_info &info,
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
 }
 
-// void draw_bounding_box([[maybe_unused]] const rendering_infos &info, size_t indices_count) noexcept {
-//   using namespace glm;
-//   auto &cmr = info.camera;
-//   auto model = cmr.model(offset_);
-  
-//   auto program = bounding_box_program::get();
-//   box_vbo_.bind();
-//   program->enable_position_pointer();
-//   program->bind_model_uniform(model);
-//   glDepthFunc(GL_GREATER);
-//   program->bind_color_uniform(vec4{1.0f, 0.0f, 0.0f, 0.6f});
-//   glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
-//   glDepthFunc(GL_LESS);
-//   program->bind_color_uniform(vec4{0.0f, 1.0f, 0.0f, 0.6f});
-//   glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
-// }
+std::pair<bool, bool>
+surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept {
+  using namespace glm;
+  std::pair<bool, bool> resolution_check{false, false};
+  const auto &cmr = info.camera;
+  auto &[too_far, too_near] = resolution_check;
+
+  double dist = length(offset_ - cmr.pos<double>());
+
+  /// near check
+  if (info_.lod < 10) {
+
+    too_near = 3.0 * dist <= terrain_radius_;
+  } else {
+
+    too_near = false;
+  }
+
+  /// far check
+  if (info_.lod > 0) {
+
+    too_far = dist >= 3.0 * terrain_radius_;
+  } else {
+
+    too_far = false;
+  }
+
+  return resolution_check;
+}
 
 surface_tile::surface_tile(geo::maptile tile) noexcept
-    : info_{tile}, offset_{0.0f}, vbo_{GL_ARRAY_BUFFER} {
+    : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
+      terrain_radius_{0.0}, offset_{0.0f}, vbo_{GL_ARRAY_BUFFER} {
   assert(basemap_.load("assets/img/test_base000.jpg"));
 }
 

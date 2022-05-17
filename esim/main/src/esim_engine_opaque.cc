@@ -46,6 +46,7 @@ void esim_engine::opaque::render() noexcept {
 
   glFrontFace(GL_CCW);
   surface_entity_->render(frame_info_);
+  // surface_entity_->render_bounding_box(frame_info_);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

@@ -1,6 +1,7 @@
 #ifndef __ESIM_MAIN_SOURCE_SCENE_SURFACE_TILE_H_
 #define __ESIM_MAIN_SOURCE_SCENE_SURFACE_TILE_H_
 
+#include "core/bounding_box.h"
 #include "core/transform.h"
 #include "details/information.h"
 #include "glapi/buffer.h"
@@ -46,6 +47,7 @@ private:
   double                                    terrain_radius_;
   glm::dvec3                                offset_;
   gl::texture                               basemap_;
+  core::bounding_box                        bounding_box_;
   uptr<gl::buffer<details::surface_vertex>>      vbo_;
   uptr<gl::buffer<details::bounding_box_vertex>> obb_vbo_;
 

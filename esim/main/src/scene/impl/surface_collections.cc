@@ -155,7 +155,10 @@ void surface_collection::prepare_render() noexcept {
         node->gen_vertex_buffer(vertex_details_);
       }
 
-      next_frame_tiles_.emplace_back(node);
+      if (node->is_visible(last_frame_)) {
+        next_frame_tiles_.emplace_back(node);
+      }
+
     }
     next_frame_prepared_.store(true, std::memory_order_release);
   }

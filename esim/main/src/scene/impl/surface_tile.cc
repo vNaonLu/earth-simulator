@@ -26,7 +26,9 @@ public:
 
   std::vector<vbo_buffer_type> export_buffer() noexcept;
 
-  std::vector<obb_buffer_type> export_bounding_box() const noexcept;
+  std::vector<obb_buffer_type> export_bounding_box_vertex() const noexcept;
+
+  core::bounding_box export_bounding_box() const noexcept;
 
   surface_tile_helper(size_t vd, glm::dvec3 offset, glm::dvec3 basis) noexcept;
 
@@ -118,7 +120,7 @@ std::vector<surface_tile_helper::vbo_buffer_type> surface_tile_helper::export_bu
   return res;
 }
 
-std::vector<surface_tile_helper::obb_buffer_type> surface_tile_helper::export_bounding_box() const noexcept {
+std::vector<surface_tile_helper::obb_buffer_type> surface_tile_helper::export_bounding_box_vertex() const noexcept {
   using namespace glm;
   std::vector<obb_buffer_type> res(8);
   auto &obb = bounding_box_.data();
@@ -129,6 +131,11 @@ std::vector<surface_tile_helper::obb_buffer_type> surface_tile_helper::export_bo
   }
 
   return res;
+}
+
+core::bounding_box surface_tile_helper::export_bounding_box() const noexcept {
+  
+  return bounding_box_;
 }
 
 surface_tile_helper::surface_tile_helper(size_t vd,
@@ -191,7 +198,8 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   vertex_helper.calculate_normal();
   offset_ = vertex_helper.offset();
   temp_vertex_ = vertex_helper.export_buffer();
-  temp_obb_vertex_ = vertex_helper.export_bounding_box();
+  temp_obb_vertex_ = vertex_helper.export_bounding_box_vertex();
+  bounding_box_ = vertex_helper.export_bounding_box();
   terrain_radius_ = vertex_helper.bounding_radius();
 
   ready_to_render_ = true;
@@ -249,7 +257,8 @@ void surface_tile::render_bounding_box(const scene::frame_info &info,
 
 surface_tile::surface_tile(geo::maptile tile) noexcept
     : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
-      terrain_radius_{0.0}, offset_{0.0f}, parent_{nullptr} {
+      terrain_radius_{0.0}, offset_{0.0f},
+      bounding_box_{offset_}, parent_{nullptr} {
   // assert(basemap_.load("assets/img/test_base000.jpg"));
 }
 
@@ -279,9 +288,26 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
   return resolution_check;
 }
 
-// bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
-//   /// reference: https://cesium.com/blog/2013/04/25/horizon-culling/
-// }
+bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
+  /// reference: https://cesium.com/blog/2013/04/25/horizon-culling/
+  using namespace glm;
+  constexpr static dvec3 base = {geo::wgs84::A, geo::wgs84::A, geo::wgs84::B};
+  dvec3 cv = info.camera.pos() / base;
+  double vh_magnitude_sq = dot(cv, cv) - 1.0f;
+
+  bool is_occluded = true;
+  for (auto &v : bounding_box_.data()) {
+    dvec3 pt = (v + offset_) / base,
+          vt = pt - cv;
+    double vt_magnitude_sq = dot(vt, vt);
+    double vt_dot_vc = -dot(cv, vt);
+
+    is_occluded &= vt_dot_vc > vh_magnitude_sq &&
+                   vt_dot_vc * vt_dot_vc / vt_magnitude_sq > vh_magnitude_sq;
+  }
+
+  return !is_occluded;
+}
 
 std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {
   std::array<rptr<surface_tile>, 4> res;

@@ -22,11 +22,13 @@ public:
 
   void render(const scene::frame_info &info, size_t indices_count) noexcept;
 
-  std::pair<bool, bool> is_enough_resolution(const scene::frame_info &info) const noexcept;
-
   surface_tile(geo::maptile tile) noexcept;
 
   ~surface_tile() = default;
+
+  std::pair<bool, bool> is_enough_resolution(const scene::frame_info &info) const noexcept;
+
+  bool is_visible(const scene::frame_info &info) const noexcept;
 
   std::array<rptr<surface_tile>, 4> expand() noexcept;
 

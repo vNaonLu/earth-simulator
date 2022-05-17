@@ -18,7 +18,7 @@ public:
   template <typename type>
   void push(type &&tilemap) noexcept;
 
-  void confirm() noexcept;
+  void calculate_normal() noexcept;
 
   glm::dvec3 offset() const noexcept;
 
@@ -26,7 +26,7 @@ public:
 
   std::vector<glm::vec3> export_bounding_box() const noexcept;
 
-  surface_tile_helper(size_t vd) noexcept;
+  surface_tile_helper(size_t vd, glm::dvec3 offset) noexcept;
 
   double bounding_radius() const noexcept;
 
@@ -38,10 +38,10 @@ private:
 private:
   const uint32_t           vertex_details_;
   const uint32_t           vertex_count_;
+  const glm::dvec3         offset_;
   double                   radius_;
   std::vector<vertex_type> computing_;
   glm::dvec3               max_, min_;
-  glm::dvec3               offset_;
   std::vector<vertex_type>::iterator  it_;
 };
 
@@ -68,15 +68,12 @@ void surface_tile_helper::push(type &&tilemap) noexcept {
   min_.z = min(min_.z, vtx.pos.z);
 }
 
-void surface_tile_helper::confirm() noexcept {
+void surface_tile_helper::calculate_normal() noexcept {
   using namespace glm;
   /// calculating normal
   for (size_t i = 1; i < vertex_details_ + 2; ++i) {
     for (size_t j = 1; j < vertex_details_ + 2; ++j) {
       auto &curr = computing_[to_index(i, j)];
-      if (j != vertex_details_ - 1) {
-        offset_ += curr.pos;
-      }
       auto up = computing_[to_index(i, j - 1)].pos - curr.pos;
       auto upleft = computing_[to_index(i - 1, j - 1)].pos - curr.pos;
       auto left = computing_[to_index(i - 1, j)].pos - curr.pos;
@@ -97,9 +94,6 @@ void surface_tile_helper::confirm() noexcept {
       curr.normal = normalize(curr.normal);
     }
   }
-  offset_ /= static_cast<double>(vertex_count_);
-  max_ -= offset_;
-  min_ -= offset_;
 }
 
 glm::dvec3 surface_tile_helper::offset() const noexcept {
@@ -128,44 +122,16 @@ std::vector<surface_tile_helper::vbo_buffer_type> surface_tile_helper::export_bu
 std::vector<glm::vec3> surface_tile_helper::export_bounding_box() const noexcept {
   std::vector<glm::vec3> res(8);
   auto v_it = res.begin();
-  /// top
-  (*v_it).x = static_cast<float>(max_.x);
-  (*v_it).y = static_cast<float>(max_.y);
-  (*v_it++).z = static_cast<float>(max_.z);
-  (*v_it).x = static_cast<float>(min_.x);
-  (*v_it).y = static_cast<float>(max_.y);
-  (*v_it++).z = static_cast<float>(max_.z);
-  (*v_it).x = static_cast<float>(max_.x);
-  (*v_it).y = static_cast<float>(max_.y);
-  (*v_it++).z = static_cast<float>(min_.z);
-  (*v_it).x = static_cast<float>(min_.x);
-  (*v_it).y = static_cast<float>(max_.y);
-  (*v_it++).z = static_cast<float>(min_.z);
-
-  // bottom
-  (*v_it).x = static_cast<float>(max_.x);
-  (*v_it).y = static_cast<float>(min_.y);
-  (*v_it++).z = static_cast<float>(max_.z);
-  (*v_it).x = static_cast<float>(min_.x);
-  (*v_it).y = static_cast<float>(min_.y);
-  (*v_it++).z = static_cast<float>(max_.z);
-  (*v_it).x = static_cast<float>(max_.x);
-  (*v_it).y = static_cast<float>(min_.y);
-  (*v_it++).z = static_cast<float>(min_.z);
-  (*v_it).x = static_cast<float>(min_.x);
-  (*v_it).y = static_cast<float>(min_.y);
-  (*v_it).z = static_cast<float>(min_.z);
 
   return res;
 }
 
-surface_tile_helper::surface_tile_helper(size_t vd) noexcept
+surface_tile_helper::surface_tile_helper(size_t vd, glm::dvec3 offset) noexcept
     : vertex_details_{static_cast<uint32_t>(vd)},
       vertex_count_{static_cast<uint32_t>((vd + 3) * (vd + 3))},
+      offset_{offset},
       radius_{0.0}, computing_(vertex_count_),
-      max_{std::numeric_limits<double>::min()},
-      min_{std::numeric_limits<double>::max()},
-      offset_{0.f}, it_{computing_.begin()} {
+      it_{computing_.begin()} {
 }
 
 double surface_tile_helper::bounding_radius() const noexcept {
@@ -196,10 +162,12 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   using namespace glm;
   const double tile_stride = 1.f / static_cast<double>(details);
   const uint32_t zoom = info_.lod;
-  /// with previous node to calculate normal verctor
+  /// with previous node to calculate normal vector
   const double xtile = info_.x - tile_stride,
                ytile = info_.y - tile_stride;
-  details::surface_tile_helper vertex_helper(details);
+  dvec3 center = {xtile + 0.5f, ytile + 0.5f, zoom};
+  geo::maptile_to_geo(center, center); center.z = 0;
+  details::surface_tile_helper vertex_helper(details, geo::geo_to_ecef(center, center));
 
   for (size_t i = 0; i <= details + 2; ++i) {
     for (size_t j = 0; j <= details + 2; ++j) {
@@ -207,7 +175,7 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
     }
   }
 
-  vertex_helper.confirm();
+  vertex_helper.calculate_normal();
   offset_ = vertex_helper.offset();
   temp_vertex_ = vertex_helper.export_buffer();
   terrain_radius_ = vertex_helper.bounding_radius();
@@ -246,6 +214,12 @@ void surface_tile::render(const scene::frame_info &info,
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
 }
 
+surface_tile::surface_tile(geo::maptile tile) noexcept
+    : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
+      terrain_radius_{0.0}, offset_{0.0f}, parent_{nullptr} {
+  // assert(basemap_.load("assets/img/test_base000.jpg"));
+}
+
 std::pair<bool, bool>
 surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept {
   using namespace glm;
@@ -272,11 +246,9 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
   return resolution_check;
 }
 
-surface_tile::surface_tile(geo::maptile tile) noexcept
-    : info_{tile}, ready_to_render_{false}, buffer_generated_{false},
-      terrain_radius_{0.0}, offset_{0.0f}, parent_{nullptr} {
-  // assert(basemap_.load("assets/img/test_base000.jpg"));
-}
+// bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
+//   /// reference: https://cesium.com/blog/2013/04/25/horizon-culling/
+// }
 
 std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {
   std::array<rptr<surface_tile>, 4> res;

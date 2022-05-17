@@ -39,13 +39,13 @@ public:
   /**
    * @brief Construct a new bounding box object.
    * 
-   * @param v1 specifies the basis to box coordinate.
-   * @param v2 specifies the basis to box coordinate.
-   * @param v3 specifies the basis to box coordinate.
+   * @param initial_val specifies the initialized value.
+   * @param b1 specifies the basis to box coordinate.
+   * @param b2 specifies the basis to box coordinate.
    */
-  bounding_box(glm::dvec3 v1 = glm::dvec3{1.0f, 0.0f, 0.0f},
-               glm::dvec3 v2 = glm::dvec3{0.0f, 1.0f, 0.0f},
-               glm::dvec3 v3 = glm::dvec3{0.0f, 0.0f, 1.0f}) noexcept;
+  bounding_box(glm::dvec3 initial_val,
+               glm::dvec3 b1 = glm::dvec3{1.0f, 0.0f, 0.0f},
+               glm::dvec3 b2 = glm::dvec3{0.0f, 1.0f, 0.0f}) noexcept;
 
   /**
    * @brief Destroy the bounding box object.
@@ -74,32 +74,37 @@ inline void bounding_box::calculate_box() noexcept {
   /// 6(min)   7
 
   auto T = inverse(coord_trans_);
-  auto reg_max = T * max_,
-       reg_min = T * min_;
+  // auto T = dmat3x3{1.0f};
 
-  box_[0] = dvec3{reg_min.x, reg_max.y, reg_max.z};
-  box_[1] = dvec3{reg_max.x, reg_min.y, reg_max.z};
-  box_[2] = dvec3{reg_min.x, reg_max.y, reg_max.z};
-  box_[3] = dvec3{reg_max.x, reg_min.y, reg_max.z};
+  box_[0] = T * dvec3{max_.x, min_.y, max_.z};
+  box_[1] = T * dvec3{max_.x, max_.y, max_.z};
+  box_[2] = T * dvec3{min_.x, min_.y, max_.z};
+  box_[3] = T * dvec3{min_.x, max_.y, max_.z};
 
-  box_[4] = dvec3{reg_min.x, reg_max.y, reg_min.z};
-  box_[5] = dvec3{reg_max.x, reg_min.y, reg_min.z};
-  box_[6] = dvec3{reg_min.x, reg_max.y, reg_min.z};
-  box_[7] = dvec3{reg_max.x, reg_min.y, reg_min.z};
+  box_[4] = T * dvec3{max_.x, min_.y, min_.z};
+  box_[5] = T * dvec3{max_.x, max_.y, min_.z};
+  box_[6] = T * dvec3{min_.x, min_.y, min_.z};
+  box_[7] = T * dvec3{min_.x, max_.y, min_.z};
 }
 
 inline void bounding_box::update(const glm::dvec3 &pos) noexcept {
   using namespace glm;
-  max_ = max(max_, coord_trans_ * pos);
-  min_ = min(min_, coord_trans_ * pos);
+  auto p_in_coord = coord_trans_ * pos;
+  max_.x = max(max_.x,  p_in_coord.x);
+  max_.y = max(max_.y,  p_in_coord.y);
+  max_.z = max(max_.z,  p_in_coord.z);
+  min_.x = min(min_.x,  p_in_coord.x);
+  min_.y = min(min_.y,  p_in_coord.y);
+  min_.z = min(min_.z,  p_in_coord.z);
 }
 
-inline bounding_box::bounding_box(glm::dvec3 x,
-                                  glm::dvec3 y,
-                                  glm::dvec3 z) noexcept
-    : coord_trans_{glm::inverse(glm::dmat3x3{x, y, z})},
-      max_{std::numeric_limits<double>::min()},
-      min_{std::numeric_limits<double>::max()} {}
+inline bounding_box::bounding_box(glm::dvec3 initial_val,
+                                  glm::dvec3 x, glm::dvec3 y) noexcept
+    : coord_trans_{glm::inverse(glm::dmat3x3{glm::normalize(x),
+                                             glm::normalize(y),
+                                             glm::normalize(glm::cross(glm::normalize(x),
+                                                                       glm::normalize(y)))})},
+      max_{initial_val}, min_{initial_val} { }
 
 } // namespace core
 

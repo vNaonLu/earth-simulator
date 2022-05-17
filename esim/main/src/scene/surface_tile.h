@@ -5,6 +5,7 @@
 #include "details/information.h"
 #include "glapi/buffer.h"
 #include "glapi/texture.h"
+#include "programs/bounding_box_program.h"
 #include "programs/surface_program.h"
 #include <array>
 
@@ -21,6 +22,8 @@ public:
   bool is_ready_to_render() const noexcept;
 
   void render(const scene::frame_info &info, size_t indices_count) noexcept;
+
+  void render_bounding_box(const scene::frame_info &info, size_t indices_count) noexcept;
 
   surface_tile(geo::maptile tile) noexcept;
 
@@ -43,12 +46,14 @@ private:
   double                                    terrain_radius_;
   glm::dvec3                                offset_;
   gl::texture                               basemap_;
-  uptr<gl::buffer<details::surface_vertex>> vbo_;
+  uptr<gl::buffer<details::surface_vertex>>      vbo_;
+  uptr<gl::buffer<details::bounding_box_vertex>> obb_vbo_;
 
   rptr<surface_tile>                parent_;
   std::array<uptr<surface_tile>, 4> children_;
 
-  mutable std::vector<details::surface_vertex> temp_vertex_;
+  mutable std::vector<details::surface_vertex>      temp_vertex_;
+  mutable std::vector<details::bounding_box_vertex> temp_obb_vertex_;
 };
 
 } // namespace scene

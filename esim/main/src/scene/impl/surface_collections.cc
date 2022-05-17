@@ -1,4 +1,5 @@
 #include "scene/surface_collections.h"
+#include "scene/programs/bounding_box_program.h"
 
 namespace esim {
 
@@ -23,15 +24,15 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
 }
 
 void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame_info &info) noexcept {
-  // using namespace glm;
-  // auto program = bounding_box_program::get();
-  // ibo_.bind(1);
-  // program->use();
-  // program->bind_view_uniform(info.camera.view());
-  // program->bind_proj_uniform(info.camera.projection());
-  // for (auto &node : drawings) {
-  //   node->draw_bounding_box(info, ibo_.size(1));
-  // }
+  using namespace glm;
+  auto program = program::bounding_box_program::get();
+  ebo_.bind(1);
+  program->use();
+  program->update_common_uniform(info);
+  program->update_line_color_uniform(vec4{0.0, 1.0, 0.0, 0.8});
+  for (auto &node : render_tiles_) {
+    node->render_bounding_box(info, ebo_.size(1));
+  }
 }
 
 surface_collection::surface_collection(size_t vertex_details) noexcept

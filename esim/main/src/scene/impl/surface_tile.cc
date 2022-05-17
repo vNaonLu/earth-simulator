@@ -1,4 +1,5 @@
 #include "scene/surface_tile.h"
+#include "core/bounding_box.h"
 #include <cstdint>
 #include <glad/glad.h>
 
@@ -8,7 +9,8 @@ namespace details {
 
 class surface_tile_helper {
 public:
-  typedef surface_vertex vbo_buffer_type;
+  typedef surface_vertex      vbo_buffer_type;
+  typedef bounding_box_vertex obb_buffer_type;
   typedef struct {
     glm::dvec3 pos;
     glm::dvec3 normal;
@@ -24,9 +26,9 @@ public:
 
   std::vector<vbo_buffer_type> export_buffer() noexcept;
 
-  std::vector<glm::vec3> export_bounding_box() const noexcept;
+  std::vector<obb_buffer_type> export_bounding_box() const noexcept;
 
-  surface_tile_helper(size_t vd, glm::dvec3 offset) noexcept;
+  surface_tile_helper(size_t vd, glm::dvec3 offset, glm::dvec3 basis) noexcept;
 
   double bounding_radius() const noexcept;
 
@@ -41,8 +43,9 @@ private:
   const glm::dvec3         offset_;
   double                   radius_;
   std::vector<vertex_type> computing_;
-  glm::dvec3               max_, min_;
   std::vector<vertex_type>::iterator  it_;
+
+  core::bounding_box       bounding_box_;
 };
 
 template <typename type>
@@ -60,17 +63,13 @@ void surface_tile_helper::push(type &&tilemap) noexcept {
   geo::geo_to_ecef(temp, temp);
   vtx.pos = temp;
 
-  max_.x = max(max_.x, vtx.pos.x);
-  max_.y = max(max_.y, vtx.pos.y);
-  max_.z = max(max_.z, vtx.pos.z);
-  min_.x = min(min_.x, vtx.pos.x);
-  min_.y = min(min_.y, vtx.pos.y);
-  min_.z = min(min_.z, vtx.pos.z);
+  bounding_box_.update(vtx.pos);
 }
 
 void surface_tile_helper::calculate_normal() noexcept {
   using namespace glm;
   /// calculating normal
+  bounding_box_.calculate_box();
   for (size_t i = 1; i < vertex_details_ + 2; ++i) {
     for (size_t j = 1; j < vertex_details_ + 2; ++j) {
       auto &curr = computing_[to_index(i, j)];
@@ -119,19 +118,26 @@ std::vector<surface_tile_helper::vbo_buffer_type> surface_tile_helper::export_bu
   return res;
 }
 
-std::vector<glm::vec3> surface_tile_helper::export_bounding_box() const noexcept {
-  std::vector<glm::vec3> res(8);
+std::vector<surface_tile_helper::obb_buffer_type> surface_tile_helper::export_bounding_box() const noexcept {
+  using namespace glm;
+  std::vector<obb_buffer_type> res(8);
+  auto &obb = bounding_box_.data();
   auto v_it = res.begin();
+
+  for (auto &v : obb) {
+    (*v_it++).pos = static_cast<vec3>(v - offset_);
+  }
 
   return res;
 }
 
-surface_tile_helper::surface_tile_helper(size_t vd, glm::dvec3 offset) noexcept
+surface_tile_helper::surface_tile_helper(size_t vd,
+                                         glm::dvec3 offset,
+                                         glm::dvec3 basis) noexcept
     : vertex_details_{static_cast<uint32_t>(vd)},
       vertex_count_{static_cast<uint32_t>((vd + 3) * (vd + 3))},
-      offset_{offset},
-      radius_{0.0}, computing_(vertex_count_),
-      it_{computing_.begin()} {
+      offset_{offset}, radius_{0.0}, computing_(vertex_count_),
+      it_{computing_.begin()}, bounding_box_{offset, offset, basis} {
 }
 
 double surface_tile_helper::bounding_radius() const noexcept {
@@ -165,9 +171,16 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   /// with previous node to calculate normal vector
   const double xtile = info_.x - tile_stride,
                ytile = info_.y - tile_stride;
-  dvec3 center = {xtile + 0.5f, ytile + 0.5f, zoom};
+  dvec3 center = {xtile + 0.5f, ytile + 0.5f, zoom},
+        north = {xtile + 0.5f, ytile, zoom};
   geo::maptile_to_geo(center, center); center.z = 0;
-  details::surface_tile_helper vertex_helper(details, geo::geo_to_ecef(center, center));
+  geo::maptile_to_geo(north, north); north.z = 0;
+  center = radians(center); north = radians(north);
+  geo::geo_to_ecef(center, center); geo::geo_to_ecef(north, north);
+  north = north - center;
+  /// adjust to 90 degree
+  dvec3 basis = normalize(cross(center, north));
+  details::surface_tile_helper vertex_helper(details, center, basis);
 
   for (size_t i = 0; i <= details + 2; ++i) {
     for (size_t j = 0; j <= details + 2; ++j) {
@@ -178,6 +191,7 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   vertex_helper.calculate_normal();
   offset_ = vertex_helper.offset();
   temp_vertex_ = vertex_helper.export_buffer();
+  temp_obb_vertex_ = vertex_helper.export_bounding_box();
   terrain_radius_ = vertex_helper.bounding_radius();
 
   ready_to_render_ = true;
@@ -192,14 +206,18 @@ void surface_tile::before_render() noexcept {
   if (!buffer_generated_) {
     vbo_ = make_uptr<gl::buffer<details::surface_vertex>>(GL_ARRAY_BUFFER);
     vbo_->bind_buffer(std::move(temp_vertex_));
+
+    obb_vbo_ = make_uptr<gl::buffer<details::bounding_box_vertex>>(GL_ARRAY_BUFFER);
+    obb_vbo_->bind_buffer(std::move(temp_obb_vertex_));
+
     buffer_generated_ = true;
   }
 }
 
 void surface_tile::render(const scene::frame_info &info,
                           size_t indices_count) noexcept {
-  before_render();
   using namespace glm;
+  before_render();
   auto &sun = info.sun;
   auto &cmr = info.camera;
   auto model = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
@@ -212,6 +230,21 @@ void surface_tile::render(const scene::frame_info &info,
   program->enable_texcoord_pointer();
   program->update_model_uniform(static_cast<mat4x4>(model));
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
+}
+
+void surface_tile::render_bounding_box(const scene::frame_info &info,
+                                       size_t indices_count) noexcept {
+  using namespace glm;
+  before_render();
+  auto &sun = info.sun;
+  auto &cmr = info.camera;
+  auto model = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+  model = cmr.translate(dmat4x4{1.0f}, offset_);
+  auto program = program::bounding_box_program::get();
+  obb_vbo_->bind();
+  program->enable_position_pointer();
+  program->update_model_uniform(static_cast<mat4x4>(model));
+  glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
 }
 
 surface_tile::surface_tile(geo::maptile tile) noexcept

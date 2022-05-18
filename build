@@ -2,7 +2,7 @@ BDIR=.build
 
 cmake -S . -B $BDIR --log-level=VERBOSE || exit
 
-cmake --build $BDIR || exit
+cmake --build $BDIR -j || exit
 
 $BDIR/debug/esim_test.exe || exit
 

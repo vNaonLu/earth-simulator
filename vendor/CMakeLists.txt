@@ -14,6 +14,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 add_library(vendor::glfw ALIAS glfw)
 
+FetchContent_Declare(
+  curl
+  GIT_REPOSITORY https://github.com/curl/curl.git
+  GIT_TAG        462196e6b4a47f924293a0e26b8e9c23d37ac26f)
+FetchContent_MakeAvailable(curl)
+add_library(vendor::libcurl ALIAS libcurl)
+
 foreach(MODULE glad stb)
 
   message(VERBOSE "Configuring ${MODULE}")

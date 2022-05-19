@@ -21,7 +21,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(httplib)
 add_library(vendor::httplib ALIAS httplib)
 
-foreach(MODULE glad stb)
+foreach(MODULE glad)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})

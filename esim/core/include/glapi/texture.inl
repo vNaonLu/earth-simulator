@@ -10,26 +10,33 @@ inline void texture::bind(size_t idx, GLuint location) const noexcept {
 
 inline bool texture::load(std::string_view file, size_t idx) noexcept {
   assert(idx < ids_.size());
-
-  int *w = &resolution_[idx].x;
-  int *h = &resolution_[idx].y;
-  int nr_ch;
-  unsigned char *data = stbi_load(file.data(), w, h, &nr_ch, 0);
-  if (nullptr != data) {
+  core::bitmap bitmap;
+  if (bitmap.load_from_file(file)) {
+    int w = resolution_[idx].x = bitmap.width();
+    int h = resolution_[idx].y = bitmap.height();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ids_[idx]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, *w, *h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, bitmap.buffer());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
 
     return true;
-  } else {
-    std::cout << stbi_failure_reason() << std::endl;
   }
 
   return false;
+}
+
+inline bool texture::load(const core::bitmap &bm, size_t idx) noexcept {
+  assert(idx < ids_.size());
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, ids_[idx]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bm.width(), bm.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bm.buffer());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  return true;
 }
 
 inline glm::ivec2 texture::resolution(size_t idx) const noexcept {

@@ -1,5 +1,5 @@
 #include "scene/surface_collections.h"
-#include "scene/programs/bounding_box_program.h"
+#include "programs/bounding_box_program.h"
 
 namespace esim {
 

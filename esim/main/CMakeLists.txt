@@ -8,11 +8,11 @@ add_library(
          ${ESIM_SOURCE_DIR}/esim_engine_opaque.cc
          ${ESIM_SOURCE_DIR}/esim_render_pipe.cc
          ${ESIM_SOURCE_DIR}/details/basemap_storage.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/stellar.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/surface_tile.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/surface_collections.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/atmosphere.cc
-         ${ESIM_SOURCE_DIR}/scene/impl/skysphere.cc)
+         ${ESIM_SOURCE_DIR}/scene/stellar.cc
+         ${ESIM_SOURCE_DIR}/scene/surface_tile.cc
+         ${ESIM_SOURCE_DIR}/scene/surface_collections.cc
+         ${ESIM_SOURCE_DIR}/scene/atmosphere.cc
+         ${ESIM_SOURCE_DIR}/scene/skysphere.cc)
 
 target_include_directories(
   ${PROJECT_NAME}_main

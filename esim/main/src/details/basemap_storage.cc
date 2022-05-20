@@ -61,8 +61,7 @@ rptr<basemap> basemap_storage::get(const geo::maptile &tile) noexcept {
   }
 
   if (!target->is_ready()) {
-    if (!target->is_requested()) {
-      request_queue_.push(std::make_pair(target.get(), tile));
+    if (!target->is_requested() && request_queue_.try_push(std::make_pair(target.get(), tile))) {
       target->mark_requested();
     }
 
@@ -94,11 +93,11 @@ basemap_storage::basemap_storage(std::string_view host,
       std::pair<rptr<basemap>, geo::maptile> item;
       if (request_queue_.try_pop(item)) {
         auto &[node, tile] = item;
-        std::ostringstream url;
-        std::regex_replace(std::ostreambuf_iterator<char>(url), url_template_.begin(), url_template_.end(), z, std::to_string(tile.lod).c_str());
-        std::regex_replace(std::ostreambuf_iterator<char>(url), url_template_.begin(), url_template_.end(), x, std::to_string(tile.x).c_str());
-        std::regex_replace(std::ostreambuf_iterator<char>(url), url_template_.begin(), url_template_.end(), y, std::to_string(tile.y).c_str());
-        node->blocking_request(host_, url.str());
+        std::string url = url_template_;
+        url = std::regex_replace(url, z, std::to_string(tile.lod).c_str());
+        url = std::regex_replace(url, x, std::to_string(tile.x).c_str());
+        url = std::regex_replace(url, y, std::to_string(tile.y).c_str());
+        node->blocking_request(host_, url);
       } else {
         std::this_thread::yield();
       }

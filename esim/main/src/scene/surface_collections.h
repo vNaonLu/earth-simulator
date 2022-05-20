@@ -3,6 +3,7 @@
 
 #include "core/fifo.h"
 #include "core/utils.h"
+#include "details/basemap_storage.h"
 #include "glapi/buffer.h"
 #include "programs/surface_program.h"
 #include "scene_entity.h"
@@ -45,6 +46,7 @@ private:
   uptr<surface_tile>                     surface_root_;
   std::vector<rptr<surface_tile>>        render_tiles_, next_frame_tiles_;
   std::unordered_set<rptr<surface_tile>> candidate_tiles_;
+  basemap_storage                        basemaps_;
   
   core::fifo<frame_info> updating_queue_;
   frame_info             last_frame_;

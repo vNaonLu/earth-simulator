@@ -19,6 +19,7 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   }
 
   for (auto &node : render_tiles_) {
+    program->update_basemap_uniform(basemaps_.get(node->details()));
     node->render(info, ebo_.size(0));
   }
 }
@@ -39,7 +40,7 @@ surface_collection::surface_collection(size_t vertex_details) noexcept
     : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2},
       next_frame_prepared_{false}, is_working_{false},
       surface_root_{make_uptr<surface_tile>(geo::maptile{0, 0, 0})},
-      updating_queue_{256} {
+      basemaps_{"server.arcgisonline.com", "/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}", 10}, updating_queue_{256} {
   ebo_.bind_buffer(gen_surface_element_buffer(), GL_STATIC_DRAW, 0);
   ebo_.bind_buffer(gen_bounding_box_element_buffer(), GL_STATIC_DRAW, 1);
   candidate_tiles_.emplace(surface_root_.get());

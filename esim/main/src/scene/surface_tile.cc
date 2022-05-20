@@ -30,7 +30,7 @@ public:
 
   core::bounding_box export_bounding_box() const noexcept;
 
-  surface_tile_helper(size_t vd, glm::dvec3 offset, glm::dvec3 basis) noexcept;
+  surface_tile_helper(const geo::maptile &tile, size_t vd, glm::dvec3 offset, glm::dvec3 basis) noexcept;
 
   double bounding_radius() const noexcept;
 
@@ -40,6 +40,7 @@ private:
   size_t to_buffer_index(size_t i, size_t j) const noexcept;
 
 private:
+  const geo::maptile       tile_;
   const uint32_t           vertex_details_;
   const uint32_t           vertex_count_;
   const glm::dvec3         offset_;
@@ -56,8 +57,8 @@ void surface_tile_helper::push(type &&tilemap) noexcept {
   assert(it_ != computing_.end());
   dvec3 temp;
   auto &vtx = *it_++;
-  vtx.texcoord.y = tilemap.x;
-  vtx.texcoord.x = tilemap.y;
+  vtx.texcoord.y = tilemap.x - tile_.x;
+  vtx.texcoord.x = tilemap.y - tile_.y;
   geo::maptile_to_geo(tilemap, temp);
   temp.z = 0;
   temp.x = radians(temp.x);
@@ -138,10 +139,11 @@ core::bounding_box surface_tile_helper::export_bounding_box() const noexcept {
   return bounding_box_;
 }
 
-surface_tile_helper::surface_tile_helper(size_t vd,
+surface_tile_helper::surface_tile_helper(const geo::maptile &tile,
+                                         size_t vd,
                                          glm::dvec3 offset,
                                          glm::dvec3 basis) noexcept
-    : vertex_details_{static_cast<uint32_t>(vd)},
+    : tile_{tile}, vertex_details_{static_cast<uint32_t>(vd)},
       vertex_count_{static_cast<uint32_t>((vd + 3) * (vd + 3))},
       offset_{offset}, radius_{0.0}, computing_(vertex_count_),
       it_{computing_.begin()}, bounding_box_{offset, offset, basis} {
@@ -187,7 +189,7 @@ void surface_tile::gen_vertex_buffer(size_t details) noexcept {
   north = north - center;
   /// adjust to 90 degree
   dvec3 basis = normalize(cross(center, north));
-  details::surface_tile_helper vertex_helper(details, center, basis);
+  details::surface_tile_helper vertex_helper(info_, details, center, basis);
 
   for (size_t i = 0; i <= details + 2; ++i) {
     for (size_t j = 0; j <= details + 2; ++j) {

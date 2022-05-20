@@ -23,7 +23,7 @@ void main() {
   if (u_UseBaseMap) {
     base_color = texture2D(u_BaseMap, v_TexCoord).rgb;
   } else {
-    base_color = vec3(0.0, 0.8, 1.0);
+    base_color = vec3(v_TexCoord, 1.0);
   }
 
   base_color = light_scale * base_color;

@@ -269,23 +269,16 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
   using namespace glm;
   std::pair<bool, bool> resolution_check{false, false};
   const auto &cmr = info.camera;
+  auto P_matrix = cmr.project<float>();
+  auto NDC = P_matrix * vec4{static_cast<float>(2.0 * terrain_radius_),
+                             static_cast<float>(2.0 * terrain_radius_),
+                             static_cast<float>(length(-offset_ + cmr.pos())), 1.0f};
+  NDC /= NDC.w;
+  NDC = abs(NDC);
+
   auto &[too_far, too_near] = resolution_check;
-
-  double dist = length(offset_ - cmr.pos<double>());
-
-  /// near check
-  if (info_.lod < 10) {
-    too_near = dist <= 3.0 * terrain_radius_;
-  } else {
-    too_near = false;
-  }
-
-  /// far check
-  if (info_.lod > 0) {
-    too_far = dist >= 6.0 * terrain_radius_;
-  } else {
-    too_far = false;
-  }
+  too_near = info_.lod < 2 && ((NDC.x > 2.0f) || (NDC.y > 2.0f));
+  too_far = info_.lod > 0 && ((NDC.x < 0.5f) || (NDC.y < 0.5f));
 
   return resolution_check;
 }

@@ -5,6 +5,8 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragOccluders;
 
 uniform bool      u_UseBaseMap;
+uniform vec2      u_TexOffset;
+uniform float     u_TexScale;
 uniform sampler2D u_BaseMap;
 
 in vec3 v_Normal;
@@ -16,14 +18,17 @@ in vec3 v_FragPos;
 void CalcLightScale(out vec3 out_lightScale, vec3 view_dir, vec3 normal, float specular_scale);
 
 void main() {
+  vec2 texcoord;
   vec3 base_color, light_scale;
 
   CalcLightScale(light_scale, normalize(-v_FragPos), v_Normal, 32.0);
 
+  texcoord = u_TexOffset + (v_TexCoord * u_TexScale);
+
   if (u_UseBaseMap) {
-    base_color = texture2D(u_BaseMap, v_TexCoord).rgb;
+    base_color = texture2D(u_BaseMap, texcoord).rgb;
   } else {
-    base_color = vec3(v_TexCoord, 1.0);
+    base_color = vec3(texcoord, 0.0);
   }
 
   base_color = light_scale * base_color;

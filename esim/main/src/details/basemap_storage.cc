@@ -1,5 +1,6 @@
 #include "basemap_storage.h"
 #include <cassert>
+#include <glm/gtx/string_cast.hpp>
 #include <ostream>
 #include <regex>
 #include <thread>
@@ -53,22 +54,40 @@ void basemap::generate_texture() noexcept {
 
 basemap::basemap() noexcept : requested_{false}, responsed_{false}, texture_created_{false} {}
 
-rptr<basemap> basemap_storage::get(const geo::maptile &tile) noexcept {
+std::pair<rptr<basemap>, basemap_texinfo>
+basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept {
+  using namespace glm;
   assert(tile.lod < maps_.size());
   auto &target = maps_[tile.lod][tile];
   if (nullptr == target) {
     target = make_uptr<basemap>();
   }
 
+
   if (!target->is_ready()) {
+
     if (!target->is_requested() && request_queue_.try_push(std::make_pair(target.get(), tile))) {
       target->mark_requested();
     }
 
-    return nullptr;
+    if (tile.lod == 0) {
+
+      return std::make_pair(nullptr, texinfo);
+    } else {
+      /// borrow from parent
+      geo::maptile parent_tile{static_cast<uint8_t>(tile.lod - 1),
+                               tile.x >> 1, tile.y >> 1};
+      texinfo.scale *= 0.5f;
+      texinfo.offset *= 0.5f;
+      texinfo.offset += 0.5f * vec2(tile.y - (parent_tile.y << 1),
+                                    tile.x - (parent_tile.x << 1));
+
+      return get(parent_tile, texinfo);
+    }
+
   } else {
 
-    return target.get();
+    return std::make_pair(target.get(), texinfo);
   }
 }
 

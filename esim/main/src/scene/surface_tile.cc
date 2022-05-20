@@ -277,7 +277,7 @@ surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept
   NDC = abs(NDC);
 
   auto &[too_far, too_near] = resolution_check;
-  too_near = info_.lod < 2 && ((NDC.x > 2.0f) || (NDC.y > 2.0f));
+  too_near = info_.lod < 9 && ((NDC.x > 2.0f) || (NDC.y > 2.0f));
   too_far = info_.lod > 0 && ((NDC.x < 0.5f) || (NDC.y < 0.5f));
 
   return resolution_check;

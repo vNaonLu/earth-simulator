@@ -24,7 +24,7 @@ public:
 
   static rptr<surface_program> get() noexcept;
 
-  void update_basemap_uniform(rptr<basemap> bm) const noexcept;
+  void update_basemap_uniform(rptr<basemap> bm, basemap_texinfo info) const noexcept;
 
   void enable_position_pointer() const noexcept;
 
@@ -38,7 +38,7 @@ public:
 
 private:
   gl::shader vshader_, fshader_;
-  GLint location_use_basemap_;
+  GLint location_use_basemap_, location_tex_offset_, location_tex_scale_;
   GLint location_pos_, location_normal_, location_texcoord_;
 };
 
@@ -51,13 +51,16 @@ inline rptr<surface_program> surface_program::get() noexcept {
   return single.get();
 }
 
-inline void surface_program::update_basemap_uniform(rptr<basemap> bm) const noexcept {
+inline void surface_program::update_basemap_uniform(rptr<basemap> bm, basemap_texinfo info) const noexcept {
   if (nullptr != bm && bm->is_ready()) {
     glUniform1i(location_use_basemap_, 1);
     bm->texture().bind();
   } else {
     glUniform1i(location_use_basemap_, 0);
   }
+  
+  glUniform1f(location_tex_scale_, info.scale);
+  glUniform2fv(location_tex_offset_, 1, glm::value_ptr(info.offset));
 }
 
 inline void surface_program::enable_position_pointer() const noexcept {
@@ -87,6 +90,8 @@ inline surface_program::surface_program() noexcept
   assert(link_shader_and_common_shaders(vshader_, fshader_));
 
   location_use_basemap_ = uniform_location("u_UseBaseMap");
+  location_tex_offset_ = uniform_location("u_TexOffset");
+  location_tex_scale_ = uniform_location("u_TexScale");
 
   location_pos_      = attribute_location("a_Pos");
   location_normal_   = attribute_location("a_Normal");

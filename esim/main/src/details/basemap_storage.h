@@ -40,9 +40,15 @@ private:
   gl::texture       texture_;
 };
 
+struct basemap_texinfo {
+  float     scale;
+  glm::vec2 offset;
+};
+
 class basemap_storage final {
 public:
-  rptr<basemap> get(const geo::maptile &tile) noexcept;
+  std::pair<rptr<basemap>, basemap_texinfo> get(const geo::maptile &tile,
+                                                basemap_texinfo texinfo = basemap_texinfo{1.0f, glm::vec2{0.0}}) noexcept;
 
   bool is_working() const noexcept;
 

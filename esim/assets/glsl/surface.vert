@@ -1,11 +1,11 @@
 #version 460
 precision highp float;
 
-uniform vec3 u_CameraPos;
 uniform float u_OuterRadius;
-uniform mat4 u_Modl;
-uniform mat4 u_View;
-uniform mat4 u_Proj;
+uniform vec3  u_CameraPos;
+uniform mat4  u_Modl;
+uniform mat4  u_View;
+uniform mat4  u_Proj;
 
 in vec3 a_Pos;
 in vec3 a_Normal;

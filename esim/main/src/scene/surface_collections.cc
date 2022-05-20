@@ -19,7 +19,8 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   }
 
   for (auto &node : render_tiles_) {
-    program->update_basemap_uniform(basemaps_.get(node->details()));
+    auto [basemap, texinfo] = basemaps_.get(node->details());
+    program->update_basemap_uniform(basemap, texinfo);
     // program->update_basemap_uniform(nullptr);
     node->render(info, ebo_.size(0));
   }

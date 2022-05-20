@@ -230,8 +230,10 @@ void surface_tile::render(const scene::frame_info &info,
   before_render();
   auto &sun = info.sun;
   auto &cmr = info.camera;
-  auto model = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
-  model = cmr.translate(dmat4x4{1.0f}, offset_);
+  auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+  dvec3 offset_era = ERA * dvec4{offset_, 1.0};
+  auto model = cmr.translate(dmat4x4{1.0f}, offset_era) * ERA;
+
   auto program = program::surface_program::get();
   // basemap_.bind();
   vbo_->bind();
@@ -248,8 +250,10 @@ void surface_tile::render_bounding_box(const scene::frame_info &info,
   before_render();
   auto &sun = info.sun;
   auto &cmr = info.camera;
-  auto model = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
-  model = cmr.translate(dmat4x4{1.0f}, offset_);
+  auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+  dvec3 offset_era = ERA * dvec4{offset_, 1.0};
+  auto model = cmr.translate(dmat4x4{1.0f}, offset_era) * ERA;
+  
   auto program = program::bounding_box_program::get();
   obb_vbo_->bind();
   program->enable_position_pointer();
@@ -287,12 +291,16 @@ bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
   /// reference: https://cesium.com/blog/2013/04/25/horizon-culling/
   using namespace glm;
   constexpr static dvec3 base = {geo::wgs84::A, geo::wgs84::A, geo::wgs84::B};
-  dvec3 cv = info.camera.pos() / base;
+  auto &cmr = info.camera;
+  auto &sun = info.sun;
+  auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+  dvec3 offset_era = ERA * dvec4{offset_, 1.0};
+  dvec3 cv = cmr.pos() / base;
   double vh_magnitude_sq = dot(cv, cv) - 1.0f;
 
   bool is_occluded = true;
   for (auto &v : bounding_box_.data()) {
-    dvec3 pt = (v + offset_) / base,
+    dvec3 pt = (v + offset_era) / base,
           vt = pt - cv;
     double vt_magnitude_sq = dot(vt, vt);
     double vt_dot_vc = -dot(cv, vt);

@@ -35,17 +35,24 @@ double surface_vertices::tile_radius() const noexcept {
 
 void surface_vertices::calculate() noexcept {
   using namespace glm;
-  offset_ = {tile_.x + 0.5f, tile_.y + 0.5f, tile_.lod};
-  dvec3 north = {tile_.x + 0.5f, tile_.y, tile_.lod};
-  geo::maptile_to_geo(offset_, offset_);
+  dvec3 north = {tile_.x + 0.5f, tile_.y, tile_.lod},
+        south = {tile_.x + 0.5f, tile_.y + 1.0, tile_.lod};
   geo::maptile_to_geo(north, north); north.z = 0;
-  offset_ = radians(offset_);  offset_.z = 0;
+  geo::maptile_to_geo(south, south); south.z = 0;
+
   north = radians(north); north.z = 0;
-  geo::geo_to_ecef(offset_, offset_); geo::geo_to_ecef(north, north);
-  north = north - offset_;
-  /// adjust to 90 degree
-  dvec3 basis = normalize(cross(offset_, north));
-  obb_ = make_uptr<core::bounding_box>(offset_, offset_, basis);
+  south = radians(south); south.z = 0;
+  dvec3 middle = (north + south) / 2.0; 
+
+  geo::geo_to_ecef(north, north);
+  geo::geo_to_ecef(south, south);
+  geo::geo_to_ecef(middle, middle);
+
+  offset_ = middle;
+  middle = normalize(middle);
+  dvec3 basis = normalize(cross(north - south, middle));
+
+  obb_ = make_uptr<core::bounding_box>(offset_, middle, basis);
 
   calculate_center();
   calculate_normal();
@@ -116,14 +123,8 @@ void surface_vertices::calculate_center() noexcept {
       geo::maptile_to_geo(curr, curr);
       curr = radians(curr); curr.z = 0;
       geo::geo_to_ecef(curr, vtx.pos);
-
-      tile_radius_ = max(tile_radius_, length(vtx.pos - offset_));
-      
-      obb_->update(vtx.pos);
     }
   }
-
-  obb_->calculate_box();
 }
 
 void surface_vertices::calculate_skirt() noexcept {
@@ -184,6 +185,9 @@ void surface_vertices::calculate_normal() noexcept {
   for (size_t i = 1; i < vertex_details_ + 2; ++i) {
     for (size_t j = 1; j < vertex_details_ + 2; ++j) {
       auto &curr = buffer_[to_index(i, j)];
+      obb_->update(curr.pos);
+      tile_radius_ = max(tile_radius_, length(curr.pos - offset_));
+
       auto up = buffer_[to_index(i, j - 1)].pos - curr.pos;
       auto upleft = buffer_[to_index(i - 1, j - 1)].pos - curr.pos;
       auto left = buffer_[to_index(i - 1, j)].pos - curr.pos;
@@ -200,6 +204,8 @@ void surface_vertices::calculate_normal() noexcept {
       curr.normal = normalize(curr.normal);
     }
   }
+
+  obb_->calculate_box();
 }
 
 surface_vertices::surface_vertices(const geo::maptile &tile, uint32_t details) noexcept

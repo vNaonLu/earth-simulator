@@ -70,7 +70,9 @@ void surface_tile::render_bounding_box(const scene::frame_info &info,
   obb_vbo_->bind();
   program->enable_position_pointer();
   program->update_model_uniform(static_cast<mat4x4>(model));
+  glPointSize(10.f);
   glDrawElements(GL_LINES, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
+  glDrawElements(GL_POINTS, static_cast<GLsizei>(indices_count), GL_UNSIGNED_SHORT, nullptr);
 }
 
 surface_tile::surface_tile(geo::maptile tile) noexcept
@@ -114,13 +116,10 @@ bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
   auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
   dvec3 offset_era = ERA * dvec4{offset_, 1.0};
   dvec3 cv = cmr.pos() / base;
-  dmat4x4 MVP = cmr.project() * cmr.view() * cmr.translate(dmat4x4{1.0f}, offset_era);
-
   double vh_magnitude_sq = dot(cv, cv) - 1.0f;
-  auto &bounding_box = vertices_generator_->obb();
-
-  for (auto &v : bounding_box.data()) {
-    dvec3 pt = (v + offset_era) / base,
+  for (auto &v : vertices_generator_->obb().data()) {
+    dvec3 era_v = ERA * dvec4{v, 1.0};
+    dvec3 pt = era_v / base,
           vt = pt - cv;
     double vt_magnitude_sq = dot(vt, vt);
     double vt_dot_vc = -dot(cv, vt);

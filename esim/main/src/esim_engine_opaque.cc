@@ -73,7 +73,7 @@ void esim_engine::opaque::render() noexcept {
   noise_.bind(0, 2);
   blend_prog->update_enable_scattering_uniform(1);
   blend_prog->update_gamma_uniform(1.0f / 2.2f);
-  blend_prog->update_exposure_uniform(1.0f);
+  blend_prog->update_exposure_uniform(2.0f);
   blend_prog->update_ndc_sun_uniform(static_cast<vec4>(sun_ndc));
   blend_prog->update_resolution_uniform(static_cast<vec2>(cmr.viewport()));
   blend_prog->update_dither_resolution_uniform(static_cast<vec2>(noise_.resolution()));

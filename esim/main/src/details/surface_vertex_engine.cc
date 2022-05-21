@@ -151,6 +151,14 @@ void surface_vertices::calculate_skirt() noexcept {
     geo::maptile_to_geo(wv, wv);
     geo::maptile_to_geo(ev, ev);
     geo::maptile_to_geo(sv, sv);
+
+    if (tile_.x == 0) {
+      nv.x = 90.0;
+    }
+    if (tile_.x == static_cast<uint32_t>((1 << tile_.lod) - 1)) {
+      sv.x = -90.0;
+    }
+
     nv = radians(nv); nv.z = - tile_radius_ * 0.01;
     wv = radians(wv); wv.z = - tile_radius_ * 0.01;
     ev = radians(ev); ev.z = - tile_radius_ * 0.01;
@@ -160,6 +168,13 @@ void surface_vertices::calculate_skirt() noexcept {
     w_vtx.pos = geo::geo_to_ecef(wv, wv);
     e_vtx.pos = geo::geo_to_ecef(ev, ev);
     s_vtx.pos = geo::geo_to_ecef(sv, sv);
+
+    if (tile_.x == 0) {
+      obb_->update(n_vtx.pos);
+    }
+    if (tile_.x == static_cast<uint32_t>((1 << tile_.lod) - 1)) {
+      obb_->update(s_vtx.pos);
+    }
 
     auto &n_neighbor = buffer_[to_index(1                  , i + 1)],
          &w_neighbor = buffer_[to_index(i + 1              , 1)],
@@ -176,6 +191,8 @@ void surface_vertices::calculate_skirt() noexcept {
     e_vtx.texcoord = e_neighbor.texcoord;
     s_vtx.texcoord = s_neighbor.texcoord;
   }
+
+  obb_->calculate_box();
 }
 
 void surface_vertices::calculate_normal() noexcept {
@@ -204,8 +221,6 @@ void surface_vertices::calculate_normal() noexcept {
       curr.normal = normalize(curr.normal);
     }
   }
-
-  obb_->calculate_box();
 }
 
 surface_vertices::surface_vertices(const geo::maptile &tile, uint32_t details) noexcept

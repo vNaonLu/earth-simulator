@@ -8,7 +8,7 @@ inline void texture::bind(size_t idx, GLuint location) const noexcept {
   glBindTexture(GL_TEXTURE_2D, ids_[idx]);
 }
 
-inline bool texture::load(std::string_view file, size_t idx) noexcept {
+inline bool texture::load(std::string_view file, size_t idx, options opt) noexcept {
   assert(idx < ids_.size());
   core::bitmap bitmap;
   if (bitmap.load_from_file(file)) {
@@ -17,8 +17,10 @@ inline bool texture::load(std::string_view file, size_t idx) noexcept {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ids_[idx]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, bitmap.buffer());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, opt.wrap_s);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, opt.wrap_t);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, opt.min_filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, opt.mag_filter);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     return true;
@@ -27,13 +29,15 @@ inline bool texture::load(std::string_view file, size_t idx) noexcept {
   return false;
 }
 
-inline bool texture::load(const core::bitmap &bm, size_t idx) noexcept {
+inline bool texture::load(const core::bitmap &bm, size_t idx, options opt) noexcept {
   assert(idx < ids_.size());
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, ids_[idx]);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bm.width(), bm.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, bm.buffer());
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, opt.wrap_s);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, opt.wrap_t);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, opt.min_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, opt.mag_filter);
   glGenerateMipmap(GL_TEXTURE_2D);
 
   return true;

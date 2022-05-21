@@ -48,7 +48,7 @@ const gl::texture &basemap::texture() noexcept {
 }
 
 void basemap::generate_texture() noexcept {
-  assert(texture_.load(bitmap_));
+  assert(texture_.load(bitmap_, 0, gl::texture::options{GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR}));
   texture_created_ = true;
 }
 
@@ -86,7 +86,7 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
     }
 
   } else {
-
+    
     return std::make_pair(target.get(), texinfo);
   }
 }

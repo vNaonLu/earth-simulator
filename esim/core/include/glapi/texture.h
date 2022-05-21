@@ -1,13 +1,13 @@
 #ifndef __ESIM_CORE_GLAPI_TEXTURE_H_
 #define __ESIM_CORE_GLAPI_TEXTURE_H_
 
+#include "core/bitmap.h"
 #include <cassert>
 #include <glad/glad.h>
 #include <glm/vec2.hpp>
-#include <stb/stb_image.h>
+#include <iostream>
 #include <string_view>
 #include <vector>
-#include <iostream>
 
 namespace esim {
 
@@ -19,6 +19,17 @@ namespace gl {
  */
 class texture {
 public:
+  /**
+   * @brief The Optionals for texture
+   * 
+   */
+  struct options {
+    GLint wrap_s = GL_REPEAT;
+    GLint wrap_t = GL_REPEAT;
+    GLint min_filter = GL_LINEAR;
+    GLint mag_filter = GL_LINEAR;
+  };
+
   /**
    * @brief Bind the texture with specified index.
    * 
@@ -32,8 +43,18 @@ public:
    * 
    * @param file specifies the target file location.
    * @param idx specifies the index of texture.
+   * @param opt specifies the texture details.
    */
-  bool load(std::string_view file, size_t idx = 0) noexcept;
+  bool load(std::string_view file, size_t idx = 0, options opt = options{}) noexcept;
+
+  /**
+   * @brief Load a texture from a bitmap object.
+   * 
+   * @param bm specifies the target bitmap.
+   * @param idx specifies the index of texture.
+   * @param opt specifies the texture details.
+   */
+  bool load(const core::bitmap &bm, size_t idx = 0, options opt = options{}) noexcept;
 
   /**
    * @brief Obtain the resolution of texture.
@@ -56,7 +77,7 @@ public:
    */
   ~texture() noexcept;
 
-private:
+protected:
   std::vector<GLuint>     ids_;
   std::vector<glm::ivec2> resolution_;
 };

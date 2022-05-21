@@ -7,14 +7,14 @@
 #include "esim_render_pipe.h"
 #include "glapi/buffer.h"
 #include "glapi/texture.h"
+#include "programs/blend_program.h"
+#include "programs/screen_program.h"
 #include "scene/atmosphere.h"
-#include "scene/programs/screen_program.h"
 #include "scene/skysphere.h"
 #include "scene/stellar.h"
 #include "scene/surface_collections.h"
 #include <atomic>
 #include <glad/glad.h>
-#include <scene/programs/blend_program.h>
 #include <thread>
 #include <vector>
 

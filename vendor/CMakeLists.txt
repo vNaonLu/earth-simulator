@@ -14,7 +14,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 add_library(vendor::glfw ALIAS glfw)
 
-foreach(MODULE glad stb)
+FetchContent_Declare(
+  httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG        9452c0a4b69c5e4e31169ed32e961d330695122c)
+FetchContent_MakeAvailable(httplib)
+add_library(vendor::httplib ALIAS httplib)
+
+foreach(MODULE glad)
 
   message(VERBOSE "Configuring ${MODULE}")
   add_subdirectory(${MODULE})

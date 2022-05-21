@@ -104,7 +104,7 @@ inline bounding_box::bounding_box(glm::dvec3 initial_val,
                                              glm::normalize(y),
                                              glm::normalize(glm::cross(glm::normalize(x),
                                                                        glm::normalize(y)))})},
-      max_{initial_val}, min_{initial_val} { }
+      max_{coord_trans_ * initial_val}, min_{coord_trans_ * initial_val} { }
 
 } // namespace core
 

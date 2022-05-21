@@ -3,6 +3,8 @@
 
 #include "core/fifo.h"
 #include "core/utils.h"
+#include "details/basemap_storage.h"
+#include "details/surface_vertex_engine.h"
 #include "glapi/buffer.h"
 #include "programs/surface_program.h"
 #include "scene_entity.h"
@@ -27,12 +29,6 @@ public:
   ~surface_collection() noexcept;
 
 private:
-  std::vector<uint16_t> gen_surface_element_buffer() noexcept;
-
-  std::vector<uint16_t> gen_bounding_box_element_buffer() noexcept;
-
-  uint16_t to_vertex_index(size_t row, size_t col) const noexcept;
-
   /// layer-threading
   void adjust_candidates() noexcept;
 
@@ -45,6 +41,8 @@ private:
   uptr<surface_tile>                     surface_root_;
   std::vector<rptr<surface_tile>>        render_tiles_, next_frame_tiles_;
   std::unordered_set<rptr<surface_tile>> candidate_tiles_;
+  basemap_storage                        basemaps_;
+  uptr<surface_vertex_engine>            surface_vertices_engine_;
   
   core::fifo<frame_info> updating_queue_;
   frame_info             last_frame_;

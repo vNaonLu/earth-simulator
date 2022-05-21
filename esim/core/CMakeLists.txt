@@ -1,6 +1,7 @@
 add_library(
   ${PROJECT_NAME}_core
-  STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/observer.cc
+  STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/bitmap.cc
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/observer.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/src/publisher.cc)
 
 target_include_directories(
@@ -9,5 +10,4 @@ target_include_directories(
 
 target_link_libraries(
   ${PROJECT_NAME}_core
-  PUBLIC vendor::glm
-         vendor::stb)
+  PUBLIC vendor::glm)

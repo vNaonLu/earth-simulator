@@ -4,6 +4,7 @@
 #include "core/bounding_box.h"
 #include "core/transform.h"
 #include "details/information.h"
+#include "details/surface_vertex_engine.h"
 #include "glapi/buffer.h"
 #include "glapi/texture.h"
 #include "programs/bounding_box_program.h"
@@ -18,7 +19,7 @@ class surface_tile final {
 public:
   const geo::maptile &details() const noexcept;
 
-  void gen_vertex_buffer(size_t details) noexcept;
+  void gen_vertex_buffer(uptr<surface_vertices> generator) noexcept;
 
   bool is_ready_to_render() const noexcept;
 
@@ -44,18 +45,14 @@ private:
 private:
   const geo::maptile                        info_;
   bool                                      ready_to_render_, buffer_generated_;
-  double                                    terrain_radius_;
   glm::dvec3                                offset_;
   gl::texture                               basemap_;
-  core::bounding_box                        bounding_box_;
+  uptr<surface_vertices>                    vertices_generator_;
   uptr<gl::buffer<details::surface_vertex>>      vbo_;
   uptr<gl::buffer<details::bounding_box_vertex>> obb_vbo_;
 
   rptr<surface_tile>                parent_;
   std::array<uptr<surface_tile>, 4> children_;
-
-  mutable std::vector<details::surface_vertex>      temp_vertex_;
-  mutable std::vector<details::bounding_box_vertex> temp_obb_vertex_;
 };
 
 } // namespace scene

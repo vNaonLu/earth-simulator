@@ -8,6 +8,7 @@ add_library(
          ${ESIM_SOURCE_DIR}/esim_engine_opaque.cc
          ${ESIM_SOURCE_DIR}/esim_render_pipe.cc
          ${ESIM_SOURCE_DIR}/details/basemap_storage.cc
+         ${ESIM_SOURCE_DIR}/details/surface_vertex_engine.cc
          ${ESIM_SOURCE_DIR}/scene/stellar.cc
          ${ESIM_SOURCE_DIR}/scene/surface_tile.cc
          ${ESIM_SOURCE_DIR}/scene/surface_collections.cc

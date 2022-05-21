@@ -82,18 +82,25 @@ std::pair<bool, bool>
 surface_tile::is_enough_resolution(const scene::frame_info &info) const noexcept {
   using namespace glm;
   std::pair<bool, bool> resolution_check{false, false};
-  const auto &cmr = info.camera;
-  double terrain_radius = vertices_generator_->tile_radius();
-  auto P_matrix = cmr.project<float>();
-  auto NDC = P_matrix * vec4{static_cast<float>(2.0 * terrain_radius),
-                             static_cast<float>(2.0 * terrain_radius),
-                             static_cast<float>(length(-offset_ + cmr.pos())), 1.0f};
-  NDC /= NDC.w;
-  NDC = abs(NDC);
 
-  auto &[too_far, too_near] = resolution_check;
-  too_near = info_.lod < 9 && ((NDC.x > 2.0f) || (NDC.y > 2.0f));
-  too_far = info_.lod > 0 && ((NDC.x < 0.5f) || (NDC.y < 0.5f));
+  if (nullptr != vertices_generator_) {
+    auto &cmr = info.camera;
+    auto &sun = info.sun;
+    auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
+    dvec3 offset_era = ERA * dvec4{offset_, 1.0};
+
+    double terrain_radius = vertices_generator_->tile_radius();
+    auto P_matrix = cmr.project<float>();
+    auto NDC = P_matrix * vec4{static_cast<float>(2.0 * terrain_radius),
+                               static_cast<float>(2.0 * terrain_radius),
+                               static_cast<float>(length(cmr.pos() - offset_era)), 1.0f};
+    NDC /= NDC.w;
+    NDC = abs(NDC);
+
+    auto &[too_far, too_near] = resolution_check;
+    too_near = info_.lod < 16 && ((NDC.x > 1.0f) || (NDC.y > 1.0f));
+    too_far = info_.lod > 0 && ((NDC.x < 0.5f) || (NDC.y < 0.5f));
+  }
 
   return resolution_check;
 }
@@ -107,21 +114,26 @@ bool surface_tile::is_visible(const scene::frame_info &info) const noexcept {
   auto ERA = rotate(dmat4x4{1.0f}, astron::era<double>(sun.julian_date()), dvec3{0.0f, 0.0f, 1.0f});
   dvec3 offset_era = ERA * dvec4{offset_, 1.0};
   dvec3 cv = cmr.pos() / base;
+  dmat4x4 MVP = cmr.project() * cmr.view() * cmr.translate(dmat4x4{1.0f}, offset_era);
+
   double vh_magnitude_sq = dot(cv, cv) - 1.0f;
   auto &bounding_box = vertices_generator_->obb();
 
-  bool is_occluded = true;
   for (auto &v : bounding_box.data()) {
     dvec3 pt = (v + offset_era) / base,
           vt = pt - cv;
     double vt_magnitude_sq = dot(vt, vt);
     double vt_dot_vc = -dot(cv, vt);
 
-    is_occluded &= vt_dot_vc > vh_magnitude_sq &&
-                   vt_dot_vc * vt_dot_vc / vt_magnitude_sq > vh_magnitude_sq;
+    if (!((vt_dot_vc > vh_magnitude_sq) &&
+          (vt_dot_vc * vt_dot_vc / vt_magnitude_sq > vh_magnitude_sq))) {
+      /// is not occluded
+
+      return true;
+    }
   }
 
-  return !is_occluded;
+  return false;
 }
 
 std::array<rptr<surface_tile>, 4> surface_tile::expand() noexcept {

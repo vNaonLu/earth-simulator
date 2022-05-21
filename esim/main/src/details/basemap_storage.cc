@@ -57,12 +57,15 @@ basemap::basemap() noexcept : requested_{false}, responsed_{false}, texture_crea
 std::pair<rptr<basemap>, basemap_texinfo>
 basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept {
   using namespace glm;
-  assert(tile.lod < maps_.size());
+  if (tile.lod >= maps_.size()) {
+
+    return get_from_parent(tile, texinfo);
+  }
+
   auto &target = maps_[tile.lod][tile];
   if (nullptr == target) {
     target = make_uptr<basemap>();
   }
-
 
   if (!target->is_ready()) {
 
@@ -74,15 +77,8 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
 
       return std::make_pair(nullptr, texinfo);
     } else {
-      /// borrow from parent
-      geo::maptile parent_tile{static_cast<uint8_t>(tile.lod - 1),
-                               tile.x >> 1, tile.y >> 1};
-      texinfo.scale *= 0.5f;
-      texinfo.offset *= 0.5f;
-      texinfo.offset += 0.5f * vec2(tile.y - (parent_tile.y << 1),
-                                    tile.x - (parent_tile.x << 1));
 
-      return get(parent_tile, texinfo);
+      return get_from_parent(tile, texinfo);
     }
 
   } else {
@@ -126,6 +122,19 @@ basemap_storage::basemap_storage(std::string_view host,
 
 basemap_storage::~basemap_storage() noexcept {
   stop();
+}
+
+std::pair<rptr<basemap>, basemap_texinfo> basemap_storage::get_from_parent(const geo::maptile &tile,
+                                                                           basemap_texinfo texinfo) noexcept {
+  using namespace glm;
+  geo::maptile parent_tile{static_cast<uint8_t>(tile.lod - 1),
+                            tile.x >> 1, tile.y >> 1};
+  texinfo.scale *= 0.5f;
+  texinfo.offset *= 0.5f;
+  texinfo.offset += 0.5f * vec2(tile.y - (parent_tile.y << 1),
+                                tile.x - (parent_tile.x << 1));
+
+  return get(parent_tile, texinfo);
 }
 
 } // namespace esim

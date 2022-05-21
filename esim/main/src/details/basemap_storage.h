@@ -59,6 +59,10 @@ public:
   ~basemap_storage() noexcept;
 
 private:
+  std::pair<rptr<basemap>, basemap_texinfo> get_from_parent(const geo::maptile &tile,
+                                                            basemap_texinfo texinfo) noexcept;
+
+private:
   std::string               host_, url_template_;
   core::fifo<std::pair<rptr<basemap>, geo::maptile>>           request_queue_;
   std::vector<std::unordered_map<geo::maptile, uptr<basemap>>> maps_;

@@ -16,11 +16,6 @@ static size_t to_center_vertex_index(size_t i, size_t j, size_t vd) noexcept {
   return i * (vd + 1) + j;
 }
 
-static size_t to_skirt_vertex_index() noexcept {
-
-  return 0;
-}
-
 } // namespace details
 
 const glm::dvec3 &surface_vertices::offset() const noexcept {
@@ -53,8 +48,8 @@ void surface_vertices::calculate() noexcept {
   obb_ = make_uptr<core::bounding_box>(offset_, offset_, basis);
 
   calculate_center();
-  // calculate_skirt();
   calculate_normal();
+  calculate_skirt();
 }
 
 std::vector<surface_vertices::vbo_buffer_type> surface_vertices::export_buffer() const noexcept {
@@ -77,7 +72,6 @@ std::vector<surface_vertices::vbo_buffer_type> surface_vertices::export_buffer()
 
   auto skirt = buffer_.begin() + (vertex_details_ + 3) * (vertex_details_ + 3);
   while (skirt != buffer_.end()) {
-    assert(it != output.end());
     auto &skt = *skirt++;
     auto &vtx = *it++;
     vtx.pos = static_cast<vec3>(skt.pos - offset_);
@@ -137,37 +131,49 @@ void surface_vertices::calculate_skirt() noexcept {
   using namespace std::placeholders;
   const double tile_stride = 1.0 / vertex_details_;
   const uint32_t lod = tile_.lod;
-  auto north_skirt = buffer_.begin() + (vertex_details_ + 1) * (vertex_details_ + 1);
+  auto north_skirt = buffer_.begin() + (vertex_details_ + 3) * (vertex_details_ + 3);
   auto west_skirt = north_skirt + (vertex_details_ + 1);
   auto east_skirt = west_skirt + (vertex_details_ + 1);
   auto south_skirt = east_skirt + (vertex_details_ + 1);
   auto to_index = std::bind(&details::to_vertex_index, _1, _2, vertex_details_);
-  for (size_t i=0; i<=vertex_details_; ++i) {
-    assert(north_skirt != buffer_.end()); assert(west_skirt != buffer_.end()); assert(east_skirt != buffer_.end()); assert(south_skirt != buffer_.end());
+  for (size_t i = 0; i < 1 + vertex_details_; ++i) {
     auto &n_vtx = *north_skirt++,
-         &w_vtx = *west_skirt++, &e_vtx = *east_skirt++,
+         &w_vtx = *west_skirt++,
+         &e_vtx = *east_skirt++,
          &s_vtx = *south_skirt++;
-    auto &n_neighbor = buffer_[to_index(i + 1, 1)],
-         &w_neighbor = buffer_[to_index(1, i + 1)], &e_neighbor = buffer_[to_index(vertex_details_ + 2, i + 1)],
-         &s_neighbor = buffer_[to_index(1 + 1, vertex_details_ + 2)];
-    dvec3 nv{tile_.x + tile_stride * i, tile_.y, lod},
-          wv{tile_.x, tile_.y + tile_stride * i, lod}, ev{tile_.x, tile_.y + 1.0, lod},
-          sv{tile_.x + 1.0, tile_.y, lod};
+    dvec3 nv{tile_.x                  , tile_.y + tile_stride * i, lod},
+          wv{tile_.x + tile_stride * i, tile_.y                  , lod},
+          ev{tile_.x + tile_stride * i, tile_.y + 1.0            , lod},
+          sv{tile_.x + 1.0            , tile_.y + tile_stride * i, lod};
 
-    n_vtx.texcoord = dvec2{nv.y - tile_.y, nv.x - tile_.y};
-    w_vtx.texcoord = dvec2{wv.y - tile_.y, wv.x - tile_.y}; e_vtx.texcoord = dvec2{ev.y - tile_.y, ev.x - tile_.y};
-    s_vtx.texcoord = dvec2{sv.y - tile_.y, sv.x - tile_.y};
-    geo::maptile_to_geo(nv, nv); geo::maptile_to_geo(wv, wv);
-    geo::maptile_to_geo(ev, ev); geo::maptile_to_geo(sv, sv);
-    nv = radians(nv); nv.z = -1000.0;
-    wv = radians(wv); wv.z = -1000.0;
-    ev = radians(ev); ev.z = -1000.0;
-    sv = radians(sv); sv.z = -1000.0;
+    geo::maptile_to_geo(nv, nv);
+    geo::maptile_to_geo(wv, wv);
+    geo::maptile_to_geo(ev, ev);
+    geo::maptile_to_geo(sv, sv);
+    nv = radians(nv); nv.z = - tile_radius_ * 0.01;
+    wv = radians(wv); wv.z = - tile_radius_ * 0.01;
+    ev = radians(ev); ev.z = - tile_radius_ * 0.01;
+    sv = radians(sv); sv.z = - tile_radius_ * 0.01;
 
-    n_vtx.pos = geo::geo_to_ecef(nv, n_vtx.pos); w_vtx.pos = geo::geo_to_ecef(wv, w_vtx.pos);
-    e_vtx.pos = geo::geo_to_ecef(ev, e_vtx.pos); s_vtx.pos = geo::geo_to_ecef(sv, s_vtx.pos);
-    n_vtx.texcoord = n_neighbor.texcoord; w_vtx.texcoord = w_neighbor.texcoord;
-    e_vtx.texcoord = e_neighbor.texcoord; s_vtx.texcoord = s_neighbor.texcoord;
+    n_vtx.pos = geo::geo_to_ecef(nv, nv);
+    w_vtx.pos = geo::geo_to_ecef(wv, wv);
+    e_vtx.pos = geo::geo_to_ecef(ev, ev);
+    s_vtx.pos = geo::geo_to_ecef(sv, sv);
+
+    auto &n_neighbor = buffer_[to_index(1                  , i + 1)],
+         &w_neighbor = buffer_[to_index(i + 1              , 1)],
+         &e_neighbor = buffer_[to_index(i + 1              , vertex_details_ + 1)],
+         &s_neighbor = buffer_[to_index(vertex_details_ + 1, i + 1)];
+
+    n_vtx.normal = n_neighbor.normal;
+    w_vtx.normal = w_neighbor.normal;
+    e_vtx.normal = e_neighbor.normal;
+    s_vtx.normal = s_neighbor.normal;
+
+    n_vtx.texcoord = n_neighbor.texcoord;
+    w_vtx.texcoord = w_neighbor.texcoord;
+    e_vtx.texcoord = e_neighbor.texcoord;
+    s_vtx.texcoord = s_neighbor.texcoord;
   }
 }
 
@@ -194,22 +200,6 @@ void surface_vertices::calculate_normal() noexcept {
       curr.normal = normalize(curr.normal);
     }
   }
-
-  // auto north_skirt = buffer_.begin() + (vertex_details_ + 1) * (vertex_details_ + 1);
-  // auto west_skirt = north_skirt + (vertex_details_ + 1);
-  // auto east_skirt = west_skirt + (vertex_details_ + 1);
-  // auto south_skirt = east_skirt + (vertex_details_ + 1);
-  // for (size_t i=0; i<=vertex_details_; ++i) {
-  //   assert(north_skirt != buffer_.end()); assert(west_skirt != buffer_.end()); assert(east_skirt != buffer_.end()); assert(south_skirt != buffer_.end());
-  //   auto &n_vtx = *north_skirt++,
-  //        &w_vtx = *west_skirt++, &e_vtx = *east_skirt++,
-  //        &s_vtx = *south_skirt++;
-  //   auto &n_neighbor = buffer_[to_index(i + 1, 1)],
-  //        &w_neighbor = buffer_[to_index(1, i + 1)], &e_neighbor = buffer_[to_index(vertex_details_ + 2, i + 1)],
-  //        &s_neighbor = buffer_[to_index(1 + 1, vertex_details_ + 2)];
-  //   n_vtx.normal = n_neighbor.normal; w_vtx.normal = w_neighbor.normal;
-  //   e_vtx.normal = e_neighbor.normal; s_vtx.normal = s_neighbor.normal;
-  // }
 }
 
 surface_vertices::surface_vertices(const geo::maptile &tile, uint32_t details) noexcept
@@ -243,8 +233,48 @@ std::vector<uint16_t> surface_vertex_engine::export_center_element_buffer() cons
 
 std::vector<uint16_t> surface_vertex_engine::export_skirt_element_buffer() const noexcept {
   using namespace std::placeholders;
-  const uint32_t vert_count = static_cast<uint32_t>(vertex_details_ * vertex_details_);
-  std::vector<uint16_t> buffer(vert_count * 6);
+  std::vector<uint16_t> buffer(vertex_details_ * 6 * 4);
+  auto to_index = std::bind(&details::to_center_vertex_index, _1, _2, vertex_details_);
+  uint32_t skirt_offset = (vertex_details_ + 1) * (vertex_details_ + 1),
+           skirt_stride = vertex_details_ + 1;
+  auto n_it = buffer.begin(),
+       w_it = n_it + (vertex_details_ * 6),
+       e_it = w_it + (vertex_details_ * 6),
+       s_it = e_it + (vertex_details_ * 6);
+
+  for (size_t i = 0; i < vertex_details_; ++i) {
+    /// north
+    *n_it++ = static_cast<uint16_t>(skirt_offset + i);
+    *n_it++ = static_cast<uint16_t>(to_index(0, i    ));
+    *n_it++ = static_cast<uint16_t>(to_index(0, i + 1));
+    *n_it++ = static_cast<uint16_t>(skirt_offset + i);
+    *n_it++ = static_cast<uint16_t>(to_index(0, i + 1));
+    *n_it++ = static_cast<uint16_t>(skirt_offset + i + 1);
+
+    /// west
+    *w_it++ = static_cast<uint16_t>(to_index(i + 0, 0));
+    *w_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + i);
+    *w_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + i + 1);
+    *w_it++ = static_cast<uint16_t>(to_index(i + 0, 0));
+    *w_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + i + 1);
+    *w_it++ = static_cast<uint16_t>(to_index(i + 1, 0));
+    
+    /// east
+    *e_it++ = static_cast<uint16_t>(to_index(i + 0, vertex_details_));
+    *e_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + i + 1);
+    *e_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + i);
+    *e_it++ = static_cast<uint16_t>(to_index(i + 0, vertex_details_));
+    *e_it++ = static_cast<uint16_t>(to_index(i + 1, vertex_details_));
+    *e_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + i + 1);
+
+    /// south
+    *s_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + skirt_stride + i);
+    *s_it++ = static_cast<uint16_t>(to_index(vertex_details_, i + 1));
+    *s_it++ = static_cast<uint16_t>(to_index(vertex_details_, i + 0));
+    *s_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + skirt_stride + i);
+    *s_it++ = static_cast<uint16_t>(skirt_offset + skirt_stride + skirt_stride + skirt_stride + i + 1);
+    *s_it++ = static_cast<uint16_t>(to_index(vertex_details_, i + 1));
+  }
 
   return buffer;
 }

@@ -8,7 +8,6 @@ namespace scene {
 void surface_collection::render(const scene::frame_info &info) noexcept {
   auto program = program::surface_program::get();
   program->use();
-  ebo_.bind(0);
   program->update_common_uniform(info);
 
   updating_queue_.try_push(info);
@@ -21,8 +20,10 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   for (auto &node : render_tiles_) {
     auto [basemap, texinfo] = basemaps_.get(node->details());
     program->update_basemap_uniform(basemap, texinfo);
-    // program->update_basemap_uniform(nullptr);
+    ebo_.bind(0);
     node->render(info, ebo_.size(0));
+    ebo_.bind(1);
+    node->render(info, ebo_.size(1));
   }
 }
 
@@ -39,13 +40,14 @@ void surface_collection::render_bounding_box([[maybe_unused]] const scene::frame
 }
 
 surface_collection::surface_collection(size_t vertex_details) noexcept
-    : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 2},
+    : vertex_details_{vertex_details}, ebo_{GL_ELEMENT_ARRAY_BUFFER, 3},
       next_frame_prepared_{false}, is_working_{false},
       surface_root_{make_uptr<surface_tile>(geo::maptile{0, 0, 0})},
       basemaps_{"server.arcgisonline.com", "/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}", 10}, 
-      surface_vertices_engine_{make_uptr<surface_vertex_engine>(vertex_details_)}, updating_queue_{256} {
+      surface_vertices_engine_{make_uptr<surface_vertex_engine>(30)}, updating_queue_{256} {
   ebo_.bind_buffer(surface_vertices_engine_->export_center_element_buffer(), GL_STATIC_DRAW, 0);
-  ebo_.bind_buffer(surface_vertices_engine_->export_obb_element_buffer(), GL_STATIC_DRAW, 1);
+  ebo_.bind_buffer(surface_vertices_engine_->export_skirt_element_buffer(), GL_STATIC_DRAW, 1);
+  ebo_.bind_buffer(surface_vertices_engine_->export_obb_element_buffer(), GL_STATIC_DRAW, 2);
   candidate_tiles_.emplace(surface_root_.get());
   is_working_.store(true, std::memory_order_release);
 

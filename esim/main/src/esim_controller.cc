@@ -3,14 +3,36 @@
 
 namespace esim {
 
-bool esim_controller::start() noexcept {
+namespace details {
+
+static std::function<void()> before_render_callback = []() {};
+
+static std::function<void()> after_render_callback = []() {};
+
+} // namespace details
+
+void esim_controller::start() noexcept {
+  assert(nullptr != engine_);
   assert(nullptr != opaque_);
-  return opaque_->start();
+
+  if (! opaque_->start()) {
+    assert(false);
+    return;
+  }
+
+  engine_->start([&]() { details::before_render_callback(); }, [&]() { details::after_render_callback(); });
 }
 
 void esim_controller::stop() noexcept {
+  assert(nullptr != engine_);
   assert(nullptr != opaque_);
   opaque_->stop();
+  engine_->stop();
+}
+
+void esim_controller::render() noexcept {
+  assert(nullptr != engine_);
+  engine_->render();
 }
 
 void esim_controller::update_viewport(int width, int height) noexcept {
@@ -45,8 +67,20 @@ void esim_controller::key_release(protocol::keycode_type key) noexcept {
   opaque_->push_event(ev);
 }
 
+void esim_controller::bind_before_render_process(std::function<void()> callback) noexcept {
+  details::before_render_callback = callback;
+}
+
+void esim_controller::bind_after_render_process(std::function<void()> callback) noexcept {
+  details::after_render_callback = callback;
+}
+
 esim_controller::esim_controller() noexcept
-    : opaque_{make_uptr<opaque>([&](rptr<void> msg) { notify(msg); })} {}
+    : opaque_{make_uptr<opaque>([&](rptr<void> msg) { notify(msg); })},
+      engine_{make_uptr<esim_engine>()} {
+  subscribe(engine_.get());
+  engine_->subscribe(this);
+}
 
 esim_controller::~esim_controller() noexcept {
   assert(nullptr != opaque_);

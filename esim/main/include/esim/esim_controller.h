@@ -6,7 +6,9 @@
 #include "core/utils.h"
 #include "details/information.h"
 #include "details/protocol.h"
+#include "esim_engine.h"
 #include <cassert>
+#include <functional>
 
 namespace esim {
 
@@ -19,13 +21,19 @@ class esim_controller final : public core::publisher,
 public:
 
   /**
-   * @brief Start a thread to handle the events.
+   * @brief Start a thread to handle the events and render the frame.
    * 
    */
-  bool start() noexcept;
+  void start() noexcept;
 
   /**
-   * @brief Stop the event handling.
+   * @brief Force to render a frame.
+   * 
+   */
+  void render() noexcept;
+
+  /**
+   * @brief Stop the event handling and rendering.
    * 
    */
   void stop() noexcept;
@@ -60,6 +68,20 @@ public:
   void key_release(protocol::keycode_type key) noexcept;
 
   /**
+   * @brief Bind the callback before rendering a frame.
+   * 
+   * @param callback specifies the callback before rendering.
+   */
+  void bind_before_render_process(std::function<void()> callback) noexcept;
+
+  /**
+   * @brief Bind the callback after rendered a frame.
+   * 
+   * @param callback specifies the callback after rendered.
+   */
+  void bind_after_render_process(std::function<void()> callback) noexcept;
+
+  /**
    * @brief Construct a new esim controller object.
    * 
    */
@@ -76,7 +98,8 @@ protected:
 
 private:
   class opaque;
-  uptr<opaque> opaque_;
+  uptr<opaque>      opaque_;
+  uptr<esim_engine> engine_;
 };
 
 } // namespace esim

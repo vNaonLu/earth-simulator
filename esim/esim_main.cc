@@ -1,7 +1,6 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <esim/esim_controller.h>
-#include <esim/esim_engine.h>
 #include <glad/glad.h>
 #include <iostream>
 
@@ -12,7 +11,6 @@ static void framebuffer_size_callback(GLFWwindow *, int, int);
 static void window_refresh_callback(GLFWwindow *);
 inline esim::protocol::keycode_type glfw_to_keycode(int) noexcept;
 
-esim::uptr<esim::esim_engine>     esim_engine;
 esim::uptr<esim::esim_controller> esim_ctrler;
 
 int main(...) {
@@ -29,8 +27,7 @@ int main(...) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  int width = 1080,
-      height = 1080;
+  int width = 1080, height = 1080;
   window = glfwCreateWindow(width, height, "Earth Simulator", NULL, NULL);
   if (!window) {
     std::cout << "[x] failed to create window." << std::endl;
@@ -48,21 +45,18 @@ int main(...) {
   gladLoadGL();
   glfwSwapInterval(1);
   glfwGetFramebufferSize(window, &width, &height);
-  esim_engine = esim::make_uptr<esim::esim_engine>();
   esim_ctrler = esim::make_uptr<esim::esim_controller>();
-  esim_ctrler->subscribe(esim_engine.get());
-  esim_engine->subscribe(esim_ctrler.get());
   esim_ctrler->update_viewport(width, height);
+  esim_ctrler->bind_before_render_process([&]() {
+    glfwPollEvents();
+    if (glfwWindowShouldClose(window)) {
+      esim_ctrler->stop();
+    }
+  });
+  esim_ctrler->bind_after_render_process([&]() { 
+    glfwSwapBuffers(window);
+  });
   esim_ctrler->start();
-  esim_engine->start(
-      [&]() {
-        glfwPollEvents();
-        if (glfwWindowShouldClose(window)) {
-          esim_ctrler->stop();
-          esim_engine->stop();
-        }
-      },
-      [&]() { glfwSwapBuffers(window); });
 
   glfwDestroyWindow(window);
   glfwTerminate();
@@ -70,8 +64,8 @@ int main(...) {
 }
 
 void window_refresh_callback(GLFWwindow *window) {
-  if (nullptr != esim_engine) {
-    esim_engine->render();
+  if (nullptr != esim_ctrler) {
+    esim_ctrler->render();
     glfwSwapBuffers(window);
   }
 }
@@ -95,7 +89,6 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window,
 static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, [[maybe_unused]] int action, [[maybe_unused]] int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
-    esim_engine->stop();
     esim_ctrler->stop();
   } else {
     if (auto keycode = glfw_to_keycode(key); keycode != -1) {

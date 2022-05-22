@@ -33,8 +33,9 @@ void esim_engine::opaque::render() noexcept {
   glDepthFunc(GL_LEQUAL);
 
   glEnable(GL_CULL_FACE);
-  glFrontFace(GL_CCW);
+  glFrontFace(GL_CW);
   skysphere_entity_->render(frame_info_);
+  glFrontFace(GL_CCW);
 
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);

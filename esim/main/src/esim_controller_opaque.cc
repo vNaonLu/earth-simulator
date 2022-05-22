@@ -169,6 +169,11 @@ void esim_controller::opaque::event_key_press(protocol::keycode_type key) noexce
     frame_info_.debug_show_light = !frame_info_.debug_show_light;
     redraw_event();
     break;
+    
+  case protocol::KEY_B:
+    frame_info_.debug_show_box = !frame_info_.debug_show_box;
+    redraw_event();
+    break;
   
   default:
     break;

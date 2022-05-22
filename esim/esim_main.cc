@@ -127,6 +127,9 @@ inline esim::protocol::keycode_type glfw_to_keycode(int glfw_key) noexcept {
   case GLFW_KEY_2:
     return esim::protocol::KEY_TWO;
 
+  case GLFW_KEY_B:
+    return esim::protocol::KEY_B;
+
   default:
     return esim::protocol::KEY_NONE;
   }

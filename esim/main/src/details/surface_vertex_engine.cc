@@ -190,6 +190,13 @@ void surface_vertices::calculate_skirt() noexcept {
     w_vtx.texcoord = w_neighbor.texcoord;
     e_vtx.texcoord = e_neighbor.texcoord;
     s_vtx.texcoord = s_neighbor.texcoord;
+    
+    if (tile_.x == 0) {
+      n_vtx.normal = dvec3{0.0, 0.0, -1.0};
+    }
+    if (tile_.x == static_cast<uint32_t>((1 << tile_.lod) - 1)) {
+      s_vtx.normal = dvec3{0.0, 0.0, 1.0};
+    }
   }
 
   obb_->calculate_box();

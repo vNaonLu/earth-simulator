@@ -124,7 +124,7 @@ void basemap_storage::stop() noexcept {
 basemap_storage::basemap_storage(std::string_view host, 
                                  std::string_view url_template,
                                  size_t max_lod) noexcept
-    : host_{host}, url_template_{url_template}, request_queue_{16},
+    : host_{host}, url_template_{url_template}, request_queue_{8},
       maps_(max_lod), is_working_{true} {
 
   std::thread([=]() {

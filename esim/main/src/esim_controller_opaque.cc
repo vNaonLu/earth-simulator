@@ -31,7 +31,7 @@ bool esim_controller::opaque::start() noexcept {
 void esim_controller::opaque::stop() noexcept {
   if (is_working()) {
     /// multiple thread may repeatly xor
-    /// finally non-stop
+    /// finally cause non-stop
     state_.fetch_xor(enums::to_raw(state::working), std::memory_order_release);
   }
 }
@@ -85,7 +85,7 @@ void esim_controller::opaque::calculate_zoom() noexcept {
     dvec3 ground;
     auto pos = cmr.pos<double>(), dir = cmr.dir<double>(), up = cmr.up<double>();
 
-    geo::ecef_to_geo(pos, ground); ground.z = 10000.0f;
+    geo::ecef_to_geo(pos, ground); ground.z = 100000.0f;
     geo::geo_to_ecef(ground, ground);
     
     pos += (ground - pos) / 10.0 * zoom_tick_;
@@ -97,6 +97,8 @@ void esim_controller::opaque::calculate_zoom() noexcept {
 
 void esim_controller::opaque::calculate_rotation() noexcept {
     using namespace glm;
+    constexpr static double kMaxROTHeight = 20'000'000.f;
+
     ivec2 move_angle_offset(0);
 
     if (pressed_keys_.count(protocol::KEY_LEFT)) {
@@ -119,11 +121,16 @@ void esim_controller::opaque::calculate_rotation() noexcept {
       dvec3 hori_rotate_axis = up * double(move_angle_offset.x);
       dvec3 vert_rotate_axis = cross(up, dir) * double(move_angle_offset.y);
       dvec3 rotate_axis = hori_rotate_axis + vert_rotate_axis;
-      dmat4x4 rotate_mat = rotate(dmat4x4{1.0f}, static_cast<double>(radians(0.3f * 3)), normalize(rotate_axis));
+
+      dvec3  LLA = pos;
+      double alt = min(geo::ecef_to_geo(pos, LLA).z, kMaxROTHeight);
+      double ROT = 1.0 * alt / kMaxROTHeight;
+
+      dmat4x4 rotate_mat = rotate(dmat4x4{1.0f}, radians(ROT), normalize(rotate_axis));
 
       pos = rotate_mat * dvec4{pos, 1.0f};
       dir = rotate_mat * dvec4{dir, 0.0f};
-      up = rotate_mat * dvec4{up, 0.0f};
+      up  = rotate_mat * dvec4{up, 0.0f};
 
       cmr.set_camera(pos, dir, up);
       redraw_event();

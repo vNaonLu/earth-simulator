@@ -68,6 +68,14 @@ public:
   void key_release(protocol::keycode_type key) noexcept;
 
   /**
+   * @brief Spawn a mouse-moving event.
+   * 
+   * @param x specifies the horizontal coordinate of cursor.
+   * @param y specifies the vertical coordinate of cursor.
+   */
+  void mouse_move(double x, double y) noexcept;
+
+  /**
    * @brief Bind the callback before rendering a frame.
    * 
    * @param callback specifies the callback before rendering.

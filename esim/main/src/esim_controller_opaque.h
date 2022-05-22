@@ -56,6 +56,8 @@ private:
 
   void event_key_release(protocol::keycode_type key) noexcept;
 
+  void event_mouse_move(double x, double y) noexcept;
+
   void event_perform(const protocol::event &event) noexcept;
 
   void event_handler() noexcept;
@@ -63,6 +65,7 @@ private:
 private:
   scene::frame_info                          frame_info_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
+  glm::dvec2                                 cursor_;
 
   /// event handler
   std::function<void(rptr<void>)> info_callback_;

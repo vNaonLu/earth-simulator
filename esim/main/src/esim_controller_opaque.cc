@@ -42,7 +42,7 @@ void esim_controller::opaque::push_event(protocol::event event) noexcept {
 
 esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
-    : frame_info_{}, info_callback_{notify_callback},
+    : frame_info_{}, cursor_{0.0}, info_callback_{notify_callback},
       event_queue_{512}, state_{0} {
   assert(nullptr != info_callback_);
 }
@@ -184,6 +184,12 @@ void esim_controller::opaque::event_key_release(protocol::keycode_type key) noex
   pressed_keys_.erase(key);
 }
 
+void esim_controller::opaque::event_mouse_move(double x, double y) noexcept {
+  cursor_.x = x;
+  cursor_.y = y;
+  // std::cout << x << " " << y << std::endl;
+}
+
 void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
   auto &cmr = frame_info_.camera;
   switch (event.type) {
@@ -199,6 +205,9 @@ void esim_controller::opaque::event_perform(const protocol::event &event) noexce
     break;
   case protocol::EVENT_KEYRELEASE:
     event_key_release(event.key);
+    break;
+  case protocol::EVENT_MOUSEMOVE:
+    event_mouse_move(event.cursor_x, event.cursor_y);
     break;
   }
 }

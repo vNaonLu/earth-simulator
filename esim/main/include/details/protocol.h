@@ -53,12 +53,14 @@ enum class event_type {
   viewport,
   key_press,
   key_release,
+  mouse_move,
 };
 
 inline constexpr static event_type EVENT_ZOOM       = event_type::zoom;
 inline constexpr static event_type EVENT_VIEWPORT   = event_type::viewport;
 inline constexpr static event_type EVENT_KEYPRESS   = event_type::key_press;
 inline constexpr static event_type EVENT_KEYRELEASE = event_type::key_release;
+inline constexpr static event_type EVENT_MOUSEMOVE  = event_type::mouse_move;
 
 /**
  * @brief Event information
@@ -71,6 +73,10 @@ struct event {
 
     struct {
       int x, y;
+    };
+    
+    struct {
+      double cursor_x, cursor_y;
     };
 
     keycode_type key;

@@ -67,6 +67,15 @@ void esim_controller::key_release(protocol::keycode_type key) noexcept {
   opaque_->push_event(ev);
 }
 
+void esim_controller::mouse_move(double x, double y) noexcept {
+  assert(nullptr != opaque_);
+  protocol::event ev;
+  ev.type = protocol::EVENT_MOUSEMOVE;
+  ev.cursor_x = x;
+  ev.cursor_y = y;
+  opaque_->push_event(ev);
+}
+
 void esim_controller::bind_before_render_process(std::function<void()> callback) noexcept {
   details::before_render_callback = callback;
 }

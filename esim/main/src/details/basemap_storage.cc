@@ -83,11 +83,11 @@ basemap::basemap() noexcept
     : opaque_{make_uptr<opaque>()} {}
 
 std::pair<rptr<basemap>, basemap_texinfo>
-basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept {
+basemap_storage::get(const geo::maptile &tile, bool perform_reqest, basemap_texinfo texinfo) noexcept {
   using namespace glm;
   if (tile.lod >= maps_.size()) {
 
-    return get_from_parent(tile, texinfo);
+    return get_from_parent(tile, perform_reqest, texinfo);
   }
 
   auto &target = maps_[tile.lod][tile];
@@ -96,7 +96,9 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
   }
 
   if (!target->is_ready()) {
-    if (!target->is_requested() && request_queue_.try_push(std::make_pair(target.get(), tile))) {
+    if (perform_reqest && !target->is_requested() &&
+        request_queue_.try_push(std::make_pair(target.get(), tile))) {
+
       target->mark_requested();
     }
     if (tile.lod == 0) {
@@ -104,7 +106,7 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
       return std::make_pair(nullptr, texinfo);
     } else {
 
-      return get_from_parent(tile, texinfo);
+      return get_from_parent(tile, perform_reqest, texinfo);
     }
   } else {
     
@@ -124,7 +126,7 @@ void basemap_storage::stop() noexcept {
 basemap_storage::basemap_storage(std::string_view host, 
                                  std::string_view url_template,
                                  size_t max_lod) noexcept
-    : host_{host}, url_template_{url_template}, request_queue_{8},
+    : host_{host}, url_template_{url_template}, request_queue_{16},
       maps_(max_lod), is_working_{true} {
 
   std::thread([=]() {
@@ -163,6 +165,7 @@ basemap_storage::~basemap_storage() noexcept {
 }
 
 std::pair<rptr<basemap>, basemap_texinfo> basemap_storage::get_from_parent(const geo::maptile &tile,
+                                                                           bool perform_reqest,
                                                                            basemap_texinfo texinfo) noexcept {
   using namespace glm;
   geo::maptile parent_tile{static_cast<uint8_t>(tile.lod - 1),
@@ -172,7 +175,7 @@ std::pair<rptr<basemap>, basemap_texinfo> basemap_storage::get_from_parent(const
   texinfo.offset += 0.5f * vec2(tile.y - (parent_tile.y << 1),
                                 tile.x - (parent_tile.x << 1));
 
-  return get(parent_tile, texinfo);
+  return get(parent_tile, perform_reqest, texinfo);
 }
 
 } // namespace esim

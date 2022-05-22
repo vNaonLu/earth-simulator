@@ -42,8 +42,7 @@ void esim_controller::opaque::push_event(protocol::event event) noexcept {
 
 esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
-    : frame_info_{}, zoom_tick_{0.0f},
-      info_callback_{notify_callback},
+    : frame_info_{}, info_callback_{notify_callback},
       event_queue_{512}, state_{0} {
   assert(nullptr != info_callback_);
 }
@@ -61,8 +60,7 @@ esim_controller::opaque::status(std::memory_order mo) const noexcept {
 void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept {
   state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
   auto info = reinterpret_cast<rptr<scene::frame_info>>(msg);
-  if (frame_info_.camera != info->camera ||
-      frame_info_.sun != info->sun) {
+  if (frame_info_ != *info) {
     redraw_event();
   }
 }
@@ -74,13 +72,22 @@ void esim_controller::opaque::redraw_event() noexcept {
 }
 
 void esim_controller::opaque::event_reset() noexcept {
-  zoom_tick_ = 0.0f;
   pressed_keys_.clear();
 }
 
-void esim_controller::opaque::calculate_zoom() noexcept {
+bool esim_controller::opaque::calculate_zoom() noexcept {
   using namespace glm;
-  if (zoom_tick_ != 0.0f) {
+
+  int rise = 0;
+
+  if (pressed_keys_.count(protocol::KEY_PAGEUP)) {
+    ++rise;
+  }
+  if (pressed_keys_.count(protocol::KEY_PAGEDOWN)) {
+    --rise;
+  }
+
+  if (rise != 0) {
     auto &cmr = frame_info_.camera;
     dvec3 ground;
     auto pos = cmr.pos<double>(), dir = cmr.dir<double>(), up = cmr.up<double>();
@@ -88,14 +95,16 @@ void esim_controller::opaque::calculate_zoom() noexcept {
     geo::ecef_to_geo(pos, ground); ground.z = 100000.0f;
     geo::geo_to_ecef(ground, ground);
     
-    pos += (ground - pos) / 10.0 * zoom_tick_;
+    pos += (ground - pos) / 100.0 * static_cast<double>(rise);
     cmr.set_camera(pos, dir, up);
-    zoom_tick_ = 0.0f;
-    redraw_event();
+
+    return true;
   }
+
+  return false;
 }
 
-void esim_controller::opaque::calculate_rotation() noexcept {
+bool esim_controller::opaque::calculate_rotation() noexcept {
     using namespace glm;
     constexpr static double kMaxROTHeight = 20'000'000.f;
 
@@ -133,13 +142,18 @@ void esim_controller::opaque::calculate_rotation() noexcept {
       up  = rotate_mat * dvec4{up, 0.0f};
 
       cmr.set_camera(pos, dir, up);
-      redraw_event();
+
+      return true;
     }
+
+    return false;
 }
 
 void esim_controller::opaque::calculate_motion() noexcept {
-  calculate_zoom();
-  calculate_rotation();
+  frame_info_.is_moving =  calculate_zoom() | calculate_rotation();
+  if (frame_info_.is_moving) {
+    redraw_event();
+  }
 }
 
 void esim_controller::opaque::event_key_press(protocol::keycode_type key) noexcept {
@@ -170,7 +184,6 @@ void esim_controller::opaque::event_perform(const protocol::event &event) noexce
   switch (event.type) {
   case protocol::EVENT_ZOOM:
     event_reset();
-    zoom_tick_ = event.value;
     break;
   case protocol::EVENT_VIEWPORT:
     event_reset();

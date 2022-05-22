@@ -108,6 +108,11 @@ inline esim::protocol::keycode_type glfw_to_keycode(int glfw_key) noexcept {
   case GLFW_KEY_RIGHT_CONTROL:
     return esim::protocol::KEY_CTRL;
 
+  case GLFW_KEY_PAGE_UP:
+    return esim::protocol::KEY_PAGEUP;
+  case GLFW_KEY_PAGE_DOWN:
+    return esim::protocol::KEY_PAGEDOWN;
+
   case GLFW_KEY_LEFT:
     return esim::protocol::KEY_LEFT;
   case GLFW_KEY_UP:

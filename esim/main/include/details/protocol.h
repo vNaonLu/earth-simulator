@@ -18,6 +18,9 @@ enum class keycode : keycode_type {
   none = 0,
   ctrl = 17,
 
+  pageup = 33,
+  pagedown = 34,
+
   left = 37,
   up = 38,
   right = 39,
@@ -29,6 +32,8 @@ enum class keycode : keycode_type {
 
 inline constexpr static keycode_type KEY_NONE  = enums::to_raw(keycode::none);
 inline constexpr static keycode_type KEY_CTRL  = enums::to_raw(keycode::ctrl);
+inline constexpr static keycode_type KEY_PAGEUP  = enums::to_raw(keycode::pageup);
+inline constexpr static keycode_type KEY_PAGEDOWN  = enums::to_raw(keycode::pagedown);
 inline constexpr static keycode_type KEY_LEFT  = enums::to_raw(keycode::left);
 inline constexpr static keycode_type KEY_UP    = enums::to_raw(keycode::up);
 inline constexpr static keycode_type KEY_RIGHT = enums::to_raw(keycode::right);

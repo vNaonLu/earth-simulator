@@ -49,6 +49,7 @@ struct basemap_texinfo {
 class basemap_storage final {
 public:
   std::pair<rptr<basemap>, basemap_texinfo> get(const geo::maptile &tile,
+                                                bool perform_reqest,
                                                 basemap_texinfo texinfo = basemap_texinfo{1.0f, glm::vec2{0.0}}) noexcept;
 
   bool is_working() const noexcept;
@@ -61,6 +62,7 @@ public:
 
 private:
   std::pair<rptr<basemap>, basemap_texinfo> get_from_parent(const geo::maptile &tile,
+                                                            bool perform_reqest,
                                                             basemap_texinfo texinfo) noexcept;
 
 private:

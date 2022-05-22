@@ -46,9 +46,9 @@ private:
 
   void event_reset() noexcept;
 
-  void calculate_zoom() noexcept;
+  bool calculate_zoom() noexcept;
 
-  void calculate_rotation() noexcept;
+  bool calculate_rotation() noexcept;
 
   void calculate_motion() noexcept;
 
@@ -62,7 +62,6 @@ private:
 
 private:
   scene::frame_info                          frame_info_;
-  double                                     zoom_tick_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 
   /// event handler

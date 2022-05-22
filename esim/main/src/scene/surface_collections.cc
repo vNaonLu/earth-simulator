@@ -17,7 +17,7 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   }
 
   for (auto &node : render_tiles_) {
-    auto [basemap, texinfo] = basemaps_.get(node->details());
+    auto [basemap, texinfo] = basemaps_.get(node->details(), !info.is_moving);
     program->update_basemap_uniform(basemap, texinfo);
     ebo_.bind(0); node->render(info, ebo_.size(0));
     ebo_.bind(1); node->render(info, ebo_.size(1));
@@ -118,7 +118,6 @@ void surface_collection::prepare_render() noexcept {
       next_frame_prepared_.store(true, std::memory_order_release);
     }
   }
-
 }
 
 } // namespace scene

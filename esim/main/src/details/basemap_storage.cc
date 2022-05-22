@@ -1,7 +1,9 @@
 #include "basemap_storage.h"
 #include <cassert>
+#include <chrono>
 #include <glm/gtx/string_cast.hpp>
 #include <ostream>
+#include <queue>
 #include <regex>
 #include <thread>
 
@@ -10,49 +12,75 @@
 
 namespace esim {
 
+struct basemap::opaque {
+  bool                            texture_created = {false};
+  gl::texture                     texture;
+  std::atomic<bool>               requested = {false};
+  uptr<core::bitmap>              bitmap = {nullptr};
+  std::future<uptr<core::bitmap>> bitmap_future;
+};
+
 bool basemap::is_ready() const noexcept {
 
-  return responsed_.load(std::memory_order_acquire);
+  return nullptr != opaque_->bitmap;
 }
 
 bool basemap::is_requested() const noexcept {
 
-  return requested_.load(std::memory_order_acquire);
+  return opaque_->requested.load(std::memory_order_acquire);
 }
 
 void basemap::mark_requested() noexcept {
-  requested_.store(true, std::memory_order_release);
+  opaque_->requested.store(true, std::memory_order_release);
 }
 
-void basemap::blocking_request(std::string host, std::string url) noexcept {
-  const static httplib::Headers header = {
+void basemap::request(std::string host, std::string url) noexcept {
+  assert(nullptr != opaque_);
+  const static httplib::Headers headers = {
       {"Accept-Encoding", "gzip, deflate, br"},
       {"Connections", "keep-alive"},
       {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36"}
   };
-  httplib::SSLClient cli(host.data());
-  cli.set_connection_timeout(std::chrono::seconds(10));
-  if (auto res = cli.Get(url.data(), header)) {
-    assert(bitmap_.load(res->body.data(), res->body.size()));
-  } else {
-    std::cout << res.error() << std::endl;
-  }
-  responsed_.store(true, std::memory_order_release);
+  opaque_->bitmap_future = std::async(std::launch::async, [=]() -> uptr<core::bitmap> {
+    httplib::SSLClient cli(host.data());
+    cli.set_connection_timeout(std::chrono::seconds(10));
+    if (auto res = cli.Get(url.data(), headers)) {
+      auto request_data = make_uptr<core::bitmap>();
+      request_data->load(res->body.data(), res->body.size());
+      return request_data;
+    } else {
+      std::cerr << res.error() << std::endl;
+      return nullptr;
+    }
+  });
 }
 
-const gl::texture &basemap::texture() noexcept {
-  if (!texture_created_) {
+void basemap::receive() noexcept {
+  opaque_->bitmap = opaque_->bitmap_future.get();
+
+  if (nullptr == opaque_->bitmap) {
+    /// request again
+    opaque_->requested.store(false, std::memory_order_release);
+  }
+}
+
+rptr<const gl::texture> basemap::texture() noexcept {
+  if (!opaque_->texture_created) {
     generate_texture();
   }
-  return texture_;
+  return &opaque_->texture;
 }
 
 void basemap::generate_texture() noexcept {
-  assert(texture_.load(bitmap_, 0, gl::texture::options{GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR}));
-  texture_created_ = true;
+  auto bitmap = opaque_->bitmap.get();
+  if (nullptr != bitmap) {
+    assert(opaque_->texture.load(*bitmap, 0, gl::texture::options{GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR}));
+    opaque_->texture_created = true;
+  }
 }
 
-basemap::basemap() noexcept : requested_{false}, responsed_{false}, texture_created_{false} {}
+basemap::basemap() noexcept
+    : opaque_{make_uptr<opaque>()} {}
 
 std::pair<rptr<basemap>, basemap_texinfo>
 basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept {
@@ -68,11 +96,9 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
   }
 
   if (!target->is_ready()) {
-
     if (!target->is_requested() && request_queue_.try_push(std::make_pair(target.get(), tile))) {
       target->mark_requested();
     }
-
     if (tile.lod == 0) {
 
       return std::make_pair(nullptr, texinfo);
@@ -80,7 +106,6 @@ basemap_storage::get(const geo::maptile &tile, basemap_texinfo texinfo) noexcept
 
       return get_from_parent(tile, texinfo);
     }
-
   } else {
     
     return std::make_pair(target.get(), texinfo);
@@ -99,23 +124,36 @@ void basemap_storage::stop() noexcept {
 basemap_storage::basemap_storage(std::string_view host, 
                                  std::string_view url_template,
                                  size_t max_lod) noexcept
-    : host_{host}, url_template_{url_template}, request_queue_{64},
+    : host_{host}, url_template_{url_template}, request_queue_{16},
       maps_(max_lod), is_working_{true} {
 
   std::thread([=]() {
     const std::regex z("\\{z\\}"), x("\\{x\\}"), y("\\{y\\}");
+    std::queue<rptr<basemap>> pending;
+    std::pair<rptr<basemap>, geo::maptile> item;
     while (is_working()) {
-      std::pair<rptr<basemap>, geo::maptile> item;
-      if (request_queue_.try_pop(item)) {
+      size_t pending_count = 0;
+
+      while (request_queue_.try_pop(item)) {
+        ++pending_count;
         auto &[node, tile] = item;
         std::string url = url_template_;
         url = std::regex_replace(url, z, std::to_string(tile.lod).c_str());
         url = std::regex_replace(url, x, std::to_string(tile.x).c_str());
         url = std::regex_replace(url, y, std::to_string(tile.y).c_str());
-        node->blocking_request(host_, url);
-      } else {
-        std::this_thread::yield();
+        node->request(host_, url);
+        pending.emplace(node);
       }
+
+      if (pending_count == 0) {
+        std::this_thread::yield();
+      } else {
+        while (!pending.empty()) {
+          auto node = pending.front(); pending.pop();
+          node->receive();
+        }
+      }
+
     }
   }).detach();
 }
@@ -128,7 +166,7 @@ std::pair<rptr<basemap>, basemap_texinfo> basemap_storage::get_from_parent(const
                                                                            basemap_texinfo texinfo) noexcept {
   using namespace glm;
   geo::maptile parent_tile{static_cast<uint8_t>(tile.lod - 1),
-                            tile.x >> 1, tile.y >> 1};
+                           tile.x >> 1, tile.y >> 1};
   texinfo.scale *= 0.5f;
   texinfo.offset *= 0.5f;
   texinfo.offset += 0.5f * vec2(tile.y - (parent_tile.y << 1),

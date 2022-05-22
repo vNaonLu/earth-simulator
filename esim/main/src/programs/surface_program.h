@@ -52,15 +52,19 @@ inline rptr<surface_program> surface_program::get() noexcept {
 }
 
 inline void surface_program::update_basemap_uniform(rptr<basemap> bm, basemap_texinfo info) const noexcept {
-  if (nullptr != bm && bm->is_ready()) {
-    glUniform1i(location_use_basemap_, 1);
-    bm->texture().bind();
-  } else {
+  if (nullptr == bm) {
     glUniform1i(location_use_basemap_, 0);
+  } else {
+    auto texture = bm->texture();
+    if (nullptr != texture) {
+      texture->bind();
+      glUniform1i(location_use_basemap_, 1);
+      glUniform1f(location_tex_scale_, info.scale);
+      glUniform2fv(location_tex_offset_, 1, glm::value_ptr(info.offset));
+    } else {
+      glUniform1i(location_use_basemap_, 0);
+    }
   }
-  
-  glUniform1f(location_tex_scale_, info.scale);
-  glUniform2fv(location_tex_offset_, 1, glm::value_ptr(info.offset));
 }
 
 inline void surface_program::enable_position_pointer() const noexcept {

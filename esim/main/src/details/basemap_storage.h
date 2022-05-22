@@ -7,6 +7,7 @@
 #include "core/utils.h"
 #include "glapi/texture.h"
 #include <atomic>
+#include <future>
 #include <glm/vec4.hpp>
 #include <string>
 #include <string_view>
@@ -22,9 +23,11 @@ public:
 
   void mark_requested() noexcept;
 
-  void blocking_request(std::string host, std::string url) noexcept;
+  void request(std::string host, std::string url) noexcept;
 
-  const gl::texture &texture() noexcept;
+  void receive() noexcept;
+
+  rptr<const gl::texture> texture() noexcept;
 
   basemap() noexcept;
 
@@ -34,10 +37,8 @@ private:
   void generate_texture() noexcept;
 
 private:
-  std::atomic<bool> requested_, responsed_;
-  bool              texture_created_;
-  core::bitmap      bitmap_;
-  gl::texture       texture_;
+  struct opaque;
+  uptr<opaque>      opaque_;
 };
 
 struct basemap_texinfo {

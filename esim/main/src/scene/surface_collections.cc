@@ -17,7 +17,7 @@ void surface_collection::render(const scene::frame_info &info) noexcept {
   }
 
   for (auto &node : render_tiles_) {
-    auto [basemap, texinfo] = basemaps_.get(node->details());
+    auto [basemap, texinfo] = basemaps_.get(node->details(), !info.is_moving);
     program->update_basemap_uniform(basemap, texinfo);
     ebo_.bind(0); node->render(info, ebo_.size(0));
     ebo_.bind(1); node->render(info, ebo_.size(1));
@@ -92,19 +92,23 @@ void surface_collection::adjust_candidates() noexcept {
 
 void surface_collection::prepare_render() noexcept {
   frame_info next_frame;
-  size_t event_count = 0;
-  while (updating_queue_.try_pop(next_frame)) {
-    ++event_count;
+
+  if (!updating_queue_.try_pop(next_frame)) {
+    std::this_thread::yield();
+    return;
   }
 
-  if (event_count > 0 && next_frame != last_frame_) {
+  while (updating_queue_.try_pop(next_frame))
+    ;
+
+  if (last_frame_.expect_redraw(next_frame)) {
     last_frame_ = std::move(next_frame);
     adjust_candidates();
-
     if (next_frame_prepared_.load(std::memory_order_acquire)) {
       std::this_thread::yield();
     } else {
       next_frame_tiles_.clear();
+
       for (auto &node : candidate_tiles_) {
         if (!node->is_ready_to_render()) {
           node->gen_vertex_buffer(surface_vertices_engine_->gen_surface_vertices(node->details()));
@@ -113,12 +117,11 @@ void surface_collection::prepare_render() noexcept {
         if (node->is_visible(last_frame_)) {
           next_frame_tiles_.emplace_back(node);
         }
-
       }
+      
       next_frame_prepared_.store(true, std::memory_order_release);
     }
   }
-
 }
 
 } // namespace scene

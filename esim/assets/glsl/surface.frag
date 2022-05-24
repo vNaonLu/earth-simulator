@@ -3,6 +3,7 @@ precision highp float;
 
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 FragOccluders;
+layout (location = 2) out vec4 FragWorldPos;
 
 uniform bool      u_UseBaseMap;
 uniform vec2      u_TexOffset;
@@ -36,4 +37,5 @@ void main() {
 
   FragColor = vec4(base_color, 1.0);
   FragOccluders = vec4(0.0, 1.0, 0.0, 1.0);
+  FragWorldPos = vec4(v_FragPos, 1.0);
 }

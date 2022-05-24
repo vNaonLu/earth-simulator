@@ -98,7 +98,7 @@ inline void camera::reset() noexcept {
   using namespace glm;
   up_ = dvec3{0.0f, 0.0f, 1.0f};
   view_ = dvec3{-1.0f, 0.0f, 0.0f};
-  ecef_ = dvec3{astron::earth_major() * 3.0, 0.0f, 0.0f};
+  ecef_ = dvec3{astron::earth_major() * 5.0, 0.0f, 0.0f};
   viewport_ = ivec2{0, 0};
   calculate_near_far();
 }

@@ -42,27 +42,41 @@ public:
 private:
   enums::raw<state> status(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
-  void redraw_event() noexcept;
+  void send_event() noexcept;
 
   void event_reset() noexcept;
 
-  void calculate_zoom() noexcept;
+  bool calculate_zoom() noexcept;
 
-  void calculate_rotation() noexcept;
+  bool calculate_rotation() noexcept;
 
-  void calculate_motion() noexcept;
+  bool calculate_mouse_motion() noexcept;
 
-  void event_key_press(protocol::keycode_type key) noexcept;
+  bool calculate_motion() noexcept;
 
-  void event_key_release(protocol::keycode_type key) noexcept;
+  bool event_key_press(protocol::keycode_type key) noexcept;
 
-  void event_perform(const protocol::event &event) noexcept;
+  bool event_key_release(protocol::keycode_type key) noexcept;
+
+  bool event_mouse_move(double x, double y) noexcept;
+
+  bool event_mouse_left_press() noexcept;
+
+  bool event_mouse_left_release() noexcept;
+
+  bool event_perform(const protocol::event &event) noexcept;
 
   void event_handler() noexcept;
 
 private:
   scene::frame_info                          frame_info_;
-  double                                     zoom_tick_;
+  glm::dvec3                                 taggled_pos_;
+  bool                                       left_mouse_pressed_;
+  struct {
+    glm::vec2 last_pos;
+    glm::vec2 curr_pos;
+    double    speed;
+  }                                          cursor_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 
   /// event handler

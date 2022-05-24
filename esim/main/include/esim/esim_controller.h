@@ -76,6 +76,18 @@ public:
   void mouse_move(double x, double y) noexcept;
 
   /**
+   * @brief Spawn a left-mouse press event.
+   * 
+   */
+  void left_mouse_press() noexcept;
+
+  /**
+   * @brief Spawn a left-mouse release event.
+   * 
+   */
+  void left_mouse_release() noexcept;
+
+  /**
    * @brief Bind the callback before rendering a frame.
    * 
    * @param callback specifies the callback before rendering.

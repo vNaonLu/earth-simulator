@@ -58,12 +58,17 @@ private:
 
   bool event_mouse_move(double x, double y) noexcept;
 
+  bool event_mouse_left_press() noexcept;
+
+  bool event_mouse_left_release() noexcept;
+
   bool event_perform(const protocol::event &event) noexcept;
 
   void event_handler() noexcept;
 
 private:
   scene::frame_info                          frame_info_;
+  bool                                       left_mouse_pressed_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 
   /// event handler

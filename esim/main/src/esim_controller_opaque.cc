@@ -42,7 +42,8 @@ void esim_controller::opaque::push_event(protocol::event event) noexcept {
 
 esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
-    : frame_info_{}, info_callback_{notify_callback},
+    : frame_info_{}, left_mouse_pressed_{false},
+      info_callback_{notify_callback},
       event_queue_{1024}, state_{0} {
   assert(nullptr != info_callback_);
 }
@@ -59,21 +60,22 @@ esim_controller::opaque::status(std::memory_order mo) const noexcept {
 
 void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept {
   auto info = reinterpret_cast<rptr<scene::frame_info>>(msg);
+  frame_info_.update_cursor(*info);
   if (frame_info_.expect_redraw(*info)) {
     send_event();
+  } else {
+    state_.fetch_and(~enums::to_raw(state::pause), std::memory_order_release);
   }
-  frame_info_.update_cursor(*info);
-  state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
 }
 
 void esim_controller::opaque::send_event() noexcept {
   scene::frame_info fork = frame_info_;
   info_callback_(&fork);
-  state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
 }
 
 void esim_controller::opaque::event_reset() noexcept {
   pressed_keys_.clear();
+  left_mouse_pressed_ = false;
 }
 
 bool esim_controller::opaque::calculate_zoom() noexcept {
@@ -191,8 +193,19 @@ bool esim_controller::opaque::event_key_release(protocol::keycode_type key) noex
 bool esim_controller::opaque::event_mouse_move(double x, double y) noexcept {
   frame_info_.cursor_pos_.x = x;
   frame_info_.cursor_pos_.y = y;
-
+    
   return true;
+}
+
+bool esim_controller::opaque::event_mouse_left_press() noexcept {
+  left_mouse_pressed_ = true;
+  return true;
+}
+
+bool esim_controller::opaque::event_mouse_left_release() noexcept {
+  left_mouse_pressed_ = false;
+
+  return false;
 }
 
 bool esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
@@ -215,6 +228,12 @@ bool esim_controller::opaque::event_perform(const protocol::event &event) noexce
   case protocol::EVENT_MOUSEMOVE:
     resend_event |= event_mouse_move(event.cursor_x, event.cursor_y);
     break;
+  case protocol::EVENT_MOUSELEFTPRESS:
+    resend_event |= event_mouse_left_press();
+    break;
+  case protocol::EVENT_MOUSELEFTRELEASE:
+    resend_event |= event_mouse_left_release();
+    break;
   }
 
   return resend_event;
@@ -226,7 +245,7 @@ void esim_controller::opaque::event_handler() noexcept {
     bool resend_event = false;
 
     if (!is_pause()) {
-      if (event_queue_.try_pop(event_msg)) {
+      while (event_queue_.try_pop(event_msg)) {
         resend_event |= event_perform(event_msg);
       }
 
@@ -234,6 +253,7 @@ void esim_controller::opaque::event_handler() noexcept {
 
       if (resend_event) {
         send_event();
+        state_.fetch_or(enums::to_raw(state::pause), std::memory_order_release);
       }
     }
   }

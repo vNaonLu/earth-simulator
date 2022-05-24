@@ -10,6 +10,7 @@ static void scroll_callback(GLFWwindow *, double, double);
 static void framebuffer_size_callback(GLFWwindow *, int, int);
 static void window_refresh_callback(GLFWwindow *);
 static void cursor_position_callback(GLFWwindow *, double, double);
+static void mouse_button_callback(GLFWwindow *, int, int, int);
 inline esim::protocol::keycode_type glfw_to_keycode(int) noexcept;
 
 esim::uptr<esim::esim_controller> esim_ctrler;
@@ -42,6 +43,7 @@ int main(...) {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetWindowRefreshCallback(window, window_refresh_callback);
   glfwSetCursorPosCallback(window, cursor_position_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   glfwMakeContextCurrent(window);
   gladLoadGL();
@@ -110,6 +112,18 @@ static void key_callback(GLFWwindow *window, int key, [[maybe_unused]] int scanc
 static void cursor_position_callback([[maybe_unused]] GLFWwindow *window, double xpos, double ypos) {
   if (nullptr != esim_ctrler) {
     esim_ctrler->mouse_move(xpos, ypos);
+  }
+}
+
+void mouse_button_callback([[maybe_unused]] GLFWwindow *window,
+                           int button, int action,
+                           [[maybe_unused]] int mods) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == GLFW_PRESS) {
+      esim_ctrler->left_mouse_press();
+    } else if (action == GLFW_RELEASE) {
+      esim_ctrler->left_mouse_release();
+    }
   }
 }
 

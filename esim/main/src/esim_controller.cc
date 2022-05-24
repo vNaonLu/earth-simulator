@@ -76,6 +76,21 @@ void esim_controller::mouse_move(double x, double y) noexcept {
   opaque_->push_event(ev);
 }
 
+void esim_controller::left_mouse_press() noexcept {
+  assert(nullptr != opaque_);
+  protocol::event ev;
+  ev.type = protocol::EVENT_MOUSELEFTPRESS;
+  opaque_->push_event(ev);
+}
+
+void esim_controller::left_mouse_release() noexcept {
+  assert(nullptr != opaque_);
+  protocol::event ev;
+  ev.type = protocol::EVENT_MOUSELEFTRELEASE;
+  opaque_->push_event(ev);
+}
+
+
 void esim_controller::bind_before_render_process(std::function<void()> callback) noexcept {
   details::before_render_callback = callback;
 }

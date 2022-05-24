@@ -7,7 +7,7 @@
 namespace esim_test {
 
 inline static void show_testcase_seed(size_t seed) noexcept {
-  std::cout << "\033[32m[          ]\033[0m testcase seed: " << seed << std::endl;
+  std::cout << "[          ] testcase seed: " << seed << std::endl;
 }
 
 inline static std::mt19937_64 gen_testcase() noexcept {

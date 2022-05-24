@@ -6,35 +6,34 @@ project(
   VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED)
   if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /wd4201 /wd4819 /wd4324 /wd4996")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++11")
 endif()
 
-add_subdirectory(vendor)
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS  OFF)
+set(GLFW_BUILD_DOCS OFF)
+set(BUILD_CURL_EXE OFF)
+set(BUILD_TESTING OFF)
 
-set(ES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(OPENSSL_INCLUDE_DIR "C:/Program Files/OpenSSL-Win64/include")
+set(OPENSSL_LIBRARIES_DIR "C:/Program Files/OpenSSL-Win64/lib")
 
-add_executable(
-  ${PROJECT_NAME}
-  ${ES_SOURCE_DIR}/main.cc
-  ${ES_SOURCE_DIR}/surface_node.cc)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/debug)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/debug)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/debug)
 
-target_include_directories(
-  ${PROJECT_NAME} 
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vendor
-          ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw/include
-          ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/release)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/release)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/release)
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  PRIVATE opengl32
-          VENDOR::glad
-          VENDOR::glfw
-          VENDOR::glm)
+foreach(MODULE vendor esim test)
 
-file(GLOB GLSL_SOURCE ${ES_SOURCE_DIR}/glsl/*)
-file(COPY ${GLSL_SOURCE} DESTINATION ${CMAKE_BINARY_DIR}/Debug/glsl)
+  message(VERBOSE "Configuring ${MODULE}")
+  add_subdirectory(${MODULE})
+  message(VERBOSE "Configuring ${MODULE} -- done")
 
-add_subdirectory(test)
+endforeach()

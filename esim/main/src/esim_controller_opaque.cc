@@ -42,7 +42,8 @@ void esim_controller::opaque::push_event(protocol::event event) noexcept {
 
 esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
-    : frame_info_{}, left_mouse_pressed_{false},
+    : frame_info_{}, taggled_pos_{0.0},
+      left_mouse_pressed_{false},
       info_callback_{notify_callback},
       event_queue_{1024}, state_{0} {
   assert(nullptr != info_callback_);
@@ -152,8 +153,19 @@ bool esim_controller::opaque::calculate_rotation() noexcept {
     return false;
 }
 
+bool esim_controller::opaque::calculate_mouse_motion() noexcept {
+  using namespace glm;
+
+  if (left_mouse_pressed_) {
+  }
+
+  return false;
+}
+
 bool esim_controller::opaque::calculate_motion() noexcept {
-  frame_info_.is_moving =  calculate_zoom() | calculate_rotation();
+  frame_info_.is_moving  = calculate_zoom();
+  frame_info_.is_moving |= calculate_rotation();
+  frame_info_.is_moving |= calculate_mouse_motion();
   
   return frame_info_.is_moving;
 }
@@ -191,14 +203,19 @@ bool esim_controller::opaque::event_key_release(protocol::keycode_type key) noex
 }
 
 bool esim_controller::opaque::event_mouse_move(double x, double y) noexcept {
-  frame_info_.cursor_pos_.x = x;
-  frame_info_.cursor_pos_.y = y;
+  cursor_.speed      = 1.0;
+  cursor_.last_pos   = cursor_.curr_pos;
+  cursor_.curr_pos.x = frame_info_.cursor_pos_.x = x;
+  cursor_.curr_pos.y = frame_info_.cursor_pos_.y = y;
     
   return true;
 }
 
 bool esim_controller::opaque::event_mouse_left_press() noexcept {
-  left_mouse_pressed_ = true;
+  taggled_pos_ = static_cast<glm::dvec3>(frame_info_.cursor_wpos_) + frame_info_.camera.pos<double>();
+  left_mouse_pressed_ = 0.0 != glm::length(static_cast<glm::dvec3>(frame_info_.cursor_wpos_));
+    std::cout << "taggled: " << to_string(taggled_pos_) << std::endl;
+
   return true;
 }
 
@@ -229,9 +246,11 @@ bool esim_controller::opaque::event_perform(const protocol::event &event) noexce
     resend_event |= event_mouse_move(event.cursor_x, event.cursor_y);
     break;
   case protocol::EVENT_MOUSELEFTPRESS:
+    event_reset();
     resend_event |= event_mouse_left_press();
     break;
   case protocol::EVENT_MOUSELEFTRELEASE:
+    event_reset();
     resend_event |= event_mouse_left_release();
     break;
   }

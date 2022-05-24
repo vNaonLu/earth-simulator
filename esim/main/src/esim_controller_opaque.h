@@ -50,6 +50,8 @@ private:
 
   bool calculate_rotation() noexcept;
 
+  bool calculate_mouse_motion() noexcept;
+
   bool calculate_motion() noexcept;
 
   bool event_key_press(protocol::keycode_type key) noexcept;
@@ -68,7 +70,13 @@ private:
 
 private:
   scene::frame_info                          frame_info_;
+  glm::dvec3                                 taggled_pos_;
   bool                                       left_mouse_pressed_;
+  struct {
+    glm::vec2 last_pos;
+    glm::vec2 curr_pos;
+    double    speed;
+  }                                          cursor_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
 
   /// event handler

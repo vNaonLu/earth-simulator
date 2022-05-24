@@ -51,7 +51,7 @@ void esim_engine::opaque::render() noexcept {
     surface_entity_->render_bounding_box(frame_info_);
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
   /// blend
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -84,6 +84,26 @@ void esim_engine::opaque::render() noexcept {
 
   /// debug
   render_framebuffer();
+}
+
+void esim_engine::opaque::after_render() noexcept {
+  using namespace glm;
+  auto &cmr = frame_info_.camera;
+  auto &cursor_pos = frame_info_.cursor_pos_;
+  auto &cursor_wpos = frame_info_.cursor_wpos_;
+  auto vp = cmr.viewport();
+
+  glFlush();
+  glBindFramebuffer(GL_FRAMEBUFFER, hdr_fbo_);
+  glViewport(0, 0, vp.x, vp.y);
+
+  glm::vec4 wpos;
+  glReadBuffer(GL_COLOR_ATTACHMENT2);
+  glReadPixels(static_cast<GLint>(cursor_pos.x), static_cast<GLint>(cursor_pos.y),
+               1, 1, GL_RGBA, GL_FLOAT, glm::value_ptr(wpos));
+  cursor_wpos = wpos;
+
+  glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 }
 
 bool esim_engine::opaque::is_rendering() const noexcept {
@@ -127,18 +147,24 @@ void esim_engine::opaque::push_frame_info(rptr<scene::frame_info> info) noexcept
 }
 
 bool esim_engine::opaque::poll_events() noexcept {
-  size_t pop_count = 0;
   scene::frame_info info;
-  while (frame_info_queue_.try_pop(info)) {
-    ++pop_count;
+  if (!frame_info_queue_.try_pop(info)) {
+    std::this_thread::yield();
+    return false;
   }
 
-  if (pop_count > 0 && frame_info_ != info) {
+  while (frame_info_queue_.try_pop(info))
+    ;
+
+  if (frame_info_.expect_redraw(info)) {
     frame_info_ = info;
     resume();
-  }
 
-  return pop_count != 0;
+    return true;
+  } else {
+
+    return frame_info_.update_cursor(info);
+  }
 }
 
 esim_engine::opaque::opaque() noexcept
@@ -148,7 +174,7 @@ esim_engine::opaque::opaque() noexcept
       skysphere_entity_{make_uptr<scene::skysphere>()},
       surface_entity_{make_uptr<scene::surface_collection>(33)},
       atmosphere_entity_{make_uptr<scene::atmosphere>()},
-      color_buffers_(2), quad_vbo_{GL_ARRAY_BUFFER} {
+      color_buffers_(3), quad_vbo_{GL_ARRAY_BUFFER} {
   using namespace glm;
 
   assert(noise_.load("assets/img/noise.png"));
@@ -160,8 +186,8 @@ esim_engine::opaque::opaque() noexcept
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1080, 1080);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-  glGenTextures(2, color_buffers_.data());
-  for (GLuint i = 0; i < 2; ++i) {
+  glGenTextures(3, color_buffers_.data());
+  for (GLuint i = 0; i < 3; ++i) {
     glBindTexture(GL_TEXTURE_2D, color_buffers_[i]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1080, 1080, 0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -171,8 +197,8 @@ esim_engine::opaque::opaque() noexcept
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_buffers_[i], 0);
   }
-  GLuint attachments[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-  glDrawBuffers(2, attachments);
+  GLuint attachments[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+  glDrawBuffers(3, attachments);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth_);
   assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -182,7 +208,6 @@ esim_engine::opaque::opaque() noexcept
                                                             details::screen_vertex{{1.0, 1.0}},
                                                             details::screen_vertex{{1.0, -1.0}}});
 
-  // prepare_normal_render_pipeline();
   state_.fetch_or(enums::to_raw(status::initialized), std::memory_order_release);
 }
 
@@ -197,39 +222,6 @@ enums::raw<esim_engine::opaque::status>
 esim_engine::opaque::state(std::memory_order mo) const noexcept {
 
   return state_.load(mo);
-}
-
-void esim_engine::opaque::prepare_normal_render_pipeline() noexcept {
-  pipeline_->push_render_event(
-      [](const scene::frame_info &info) {
-        auto vp = info.camera.viewport();
-        glViewport(0, 0, vp.x, vp.y);
-        glEnable(GL_MULTISAMPLE);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-        glDepthFunc(GL_LEQUAL);
-
-        glEnable(GL_CULL_FACE);
-        glFrontFace(GL_CCW);
-      });
-  pipeline_->push_render_entity(skysphere_entity_.get());
-  pipeline_->push_render_event(
-      []([[maybe_unused]] const scene::frame_info &info) {
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-      });
-  pipeline_->push_render_entity(sun_entity_.get());
-  pipeline_->push_render_event(
-      []([[maybe_unused]] const scene::frame_info &info) {
-        glDepthMask(GL_TRUE);
-      });
-  pipeline_->push_render_entity(surface_entity_.get());
-  pipeline_->push_render_entity(atmosphere_entity_.get());
 }
 
 void esim_engine::opaque::render_framebuffer() noexcept {
@@ -255,6 +247,15 @@ void esim_engine::opaque::render_framebuffer() noexcept {
                rez.y * (frame_count % 4), rez.x, rez.y);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, color_buffers_[1]);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
+    ++frame_count;
+  }
+  
+  if(frame_info_.debug_show_light) {
+    glViewport(rez.x * (frame_count / 4), 
+               rez.y * (frame_count % 4), rez.x, rez.y);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_buffers_[2]);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(quad_vbo_.size()));
     ++frame_count;
   }

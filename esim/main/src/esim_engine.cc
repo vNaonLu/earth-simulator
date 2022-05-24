@@ -15,9 +15,11 @@ void esim_engine::start(std::function<void()> before_render,
     if (!opaque_->is_pause()) {
       opaque_->render();
       after_render();
-      auto info = opaque_->frame_info();
-      notify(&info);
     }
+    opaque_->after_render();
+
+    auto info = opaque_->frame_info();
+    notify(&info);
   }
   opaque_->terminate();
 }

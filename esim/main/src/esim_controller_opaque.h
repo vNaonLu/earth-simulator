@@ -42,7 +42,7 @@ public:
 private:
   enums::raw<state> status(std::memory_order mo = std::memory_order_acquire) const noexcept;
 
-  void redraw_event() noexcept;
+  void send_event() noexcept;
 
   void event_reset() noexcept;
 
@@ -50,22 +50,21 @@ private:
 
   bool calculate_rotation() noexcept;
 
-  void calculate_motion() noexcept;
+  bool calculate_motion() noexcept;
 
-  void event_key_press(protocol::keycode_type key) noexcept;
+  bool event_key_press(protocol::keycode_type key) noexcept;
 
-  void event_key_release(protocol::keycode_type key) noexcept;
+  bool event_key_release(protocol::keycode_type key) noexcept;
 
-  void event_mouse_move(double x, double y) noexcept;
+  bool event_mouse_move(double x, double y) noexcept;
 
-  void event_perform(const protocol::event &event) noexcept;
+  bool event_perform(const protocol::event &event) noexcept;
 
   void event_handler() noexcept;
 
 private:
   scene::frame_info                          frame_info_;
   std::unordered_set<protocol::keycode_type> pressed_keys_;
-  glm::dvec2                                 cursor_;
 
   /// event handler
   std::function<void(rptr<void>)> info_callback_;

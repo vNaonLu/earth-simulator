@@ -34,6 +34,8 @@ public:
 
   void render() noexcept;
 
+  void after_render() noexcept;
+
   bool is_rendering() const noexcept;
   
   bool is_pause() const noexcept;

@@ -19,7 +19,7 @@ int main(...) {
   glfwSetErrorCallback(error_callback);
 
   if (!glfwInit()) {
-    std::cout << "[x] failed to initialize glfw." << std::endl;
+    std::cerr << "[x] failed to initialize glfw." << std::endl;
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
@@ -31,7 +31,7 @@ int main(...) {
   int width = 1080, height = 1080;
   window = glfwCreateWindow(width, height, "Earth Simulator", NULL, NULL);
   if (!window) {
-    std::cout << "[x] failed to create window." << std::endl;
+    std::cerr << "[x] failed to create window." << std::endl;
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
@@ -73,7 +73,7 @@ void window_refresh_callback(GLFWwindow *window) {
 }
 
 static void error_callback([[maybe_unused]] int error, const char *msg) {
-  std::cout << "[x] error occured: " << msg << std::endl;
+  std::cerr << "[x] error occured: " << msg << std::endl;
 }
 
 static void scroll_callback([[maybe_unused]] GLFWwindow *window,
@@ -138,6 +138,8 @@ inline esim::protocol::keycode_type glfw_to_keycode(int glfw_key) noexcept {
     return esim::protocol::KEY_ONE;
   case GLFW_KEY_2:
     return esim::protocol::KEY_TWO;
+  case GLFW_KEY_3:
+    return esim::protocol::KEY_THREE;
 
   case GLFW_KEY_B:
     return esim::protocol::KEY_B;

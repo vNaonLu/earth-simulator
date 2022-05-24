@@ -42,8 +42,8 @@ void esim_controller::opaque::push_event(protocol::event event) noexcept {
 
 esim_controller::opaque::opaque(
     std::function<void(rptr<void>)> notify_callback) noexcept
-    : frame_info_{}, cursor_{0.0}, info_callback_{notify_callback},
-      event_queue_{512}, state_{0} {
+    : frame_info_{}, info_callback_{notify_callback},
+      event_queue_{1024}, state_{0} {
   assert(nullptr != info_callback_);
 }
 
@@ -58,14 +58,15 @@ esim_controller::opaque::status(std::memory_order mo) const noexcept {
 }
 
 void esim_controller::opaque::receive_last_frame(rptr<void> msg) noexcept {
-  state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
   auto info = reinterpret_cast<rptr<scene::frame_info>>(msg);
-  if (frame_info_ != *info) {
-    redraw_event();
+  if (frame_info_.expect_redraw(*info)) {
+    send_event();
   }
+  frame_info_.update_cursor(*info);
+  state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
 }
 
-void esim_controller::opaque::redraw_event() noexcept {
+void esim_controller::opaque::send_event() noexcept {
   scene::frame_info fork = frame_info_;
   info_callback_(&fork);
   state_.fetch_xor(enums::to_raw(state::pause), std::memory_order_release);
@@ -149,49 +150,54 @@ bool esim_controller::opaque::calculate_rotation() noexcept {
     return false;
 }
 
-void esim_controller::opaque::calculate_motion() noexcept {
+bool esim_controller::opaque::calculate_motion() noexcept {
   frame_info_.is_moving =  calculate_zoom() | calculate_rotation();
-  if (frame_info_.is_moving) {
-    redraw_event();
-  }
+  
+  return frame_info_.is_moving;
 }
 
-void esim_controller::opaque::event_key_press(protocol::keycode_type key) noexcept {
+bool esim_controller::opaque::event_key_press(protocol::keycode_type key) noexcept {
   pressed_keys_.insert(key);
 
   switch (key) {
   case protocol::KEY_ONE:
     frame_info_.debug_show_scene = !frame_info_.debug_show_scene;
-    redraw_event();
-    break;
+    return true;
 
   case protocol::KEY_TWO:
     frame_info_.debug_show_light = !frame_info_.debug_show_light;
-    redraw_event();
-    break;
+    return true;
+
+  case protocol::KEY_THREE:
+    frame_info_.debug_show_ndc = !frame_info_.debug_show_ndc;
+    return true;
     
   case protocol::KEY_B:
     frame_info_.debug_show_box = !frame_info_.debug_show_box;
-    redraw_event();
-    break;
+    return true;
   
   default:
-    break;
+
+    return false;
   }
 }
 
-void esim_controller::opaque::event_key_release(protocol::keycode_type key) noexcept {
+bool esim_controller::opaque::event_key_release(protocol::keycode_type key) noexcept {
   pressed_keys_.erase(key);
+
+  return false;
 }
 
-void esim_controller::opaque::event_mouse_move(double x, double y) noexcept {
-  cursor_.x = x;
-  cursor_.y = y;
-  // std::cout << x << " " << y << std::endl;
+bool esim_controller::opaque::event_mouse_move(double x, double y) noexcept {
+  frame_info_.cursor_pos_.x = x;
+  frame_info_.cursor_pos_.y = y;
+
+  return true;
 }
 
-void esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
+bool esim_controller::opaque::event_perform(const protocol::event &event) noexcept {
   auto &cmr = frame_info_.camera;
+  bool resend_event = false;
   switch (event.type) {
   case protocol::EVENT_ZOOM:
     event_reset();
@@ -201,26 +207,34 @@ void esim_controller::opaque::event_perform(const protocol::event &event) noexce
     cmr.set_viewport(event.x, event.y);
     break;
   case protocol::EVENT_KEYPRESS:
-    event_key_press(event.key);
+    resend_event |= event_key_press(event.key);
     break;
   case protocol::EVENT_KEYRELEASE:
-    event_key_release(event.key);
+    resend_event |= event_key_release(event.key);
     break;
   case protocol::EVENT_MOUSEMOVE:
-    event_mouse_move(event.cursor_x, event.cursor_y);
+    resend_event |= event_mouse_move(event.cursor_x, event.cursor_y);
     break;
   }
+
+  return resend_event;
 }
 
 void esim_controller::opaque::event_handler() noexcept {
   static protocol::event event_msg;
   while(is_working()) {
+    bool resend_event = false;
+
     if (!is_pause()) {
       if (event_queue_.try_pop(event_msg)) {
-        event_perform(event_msg);
+        resend_event |= event_perform(event_msg);
       }
 
-      calculate_motion();
+      resend_event |= calculate_motion();
+
+      if (resend_event) {
+        send_event();
+      }
     }
   }
 }

@@ -28,6 +28,7 @@ enum class keycode : keycode_type {
 
   num1 = 49,
   num2 = 50,
+  num3 = 51,
 
   b = 66,
 };
@@ -42,6 +43,7 @@ inline constexpr static keycode_type KEY_RIGHT = enums::to_raw(keycode::right);
 inline constexpr static keycode_type KEY_DOWN  = enums::to_raw(keycode::down);
 inline constexpr static keycode_type KEY_ONE  = enums::to_raw(keycode::num1);
 inline constexpr static keycode_type KEY_TWO  = enums::to_raw(keycode::num2);
+inline constexpr static keycode_type KEY_THREE = enums::to_raw(keycode::num3);
 inline constexpr static keycode_type KEY_B  = enums::to_raw(keycode::b);
 
 /**
